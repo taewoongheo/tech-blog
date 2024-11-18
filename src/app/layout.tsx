@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import './globals.css'
+// import './globals.css'
 
 // const geistSans = localFont({
 //   src: './fonts/GeistVF.woff',
@@ -24,7 +24,16 @@ export default function RootLayout({
 }>): React.ReactElement {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body
+        style={{
+          width: '100%',
+          height: '100%',
+          backgroundColor: 'white',
+          color: 'black',
+        }}
+      >
+        {children}
+      </body>
     </html>
   )
 }

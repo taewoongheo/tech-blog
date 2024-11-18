@@ -1,4 +1,11 @@
+import Test from '@/posts/Test.mdx'
+
 const Main = (): React.ReactElement => {
-  return <h2>Main</h2>
+  return (
+    <div style={{ background: 'white' }}>
+      <Test />
+    </div>
+  )
 }
+
 export default Main
