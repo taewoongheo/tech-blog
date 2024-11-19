@@ -1,0 +1,231 @@
+# 객체와 변경불가성(Immutability)
+
+`변경불가성(Immutability)` 이란 참조를 통해 공유되어 있는 객체를 변경하지 못하도록 하는 디자인 패턴이다.
+
+참조를 통해 여러 객체에 의해 참조되어 있는 객체가 있다고 해보자. 참조를 통해 공유되어 있다면 해당 객체를 얼마든지 변경할 수 있다.
+
+특정 객체에서 해당 객체를 변경하면, 객체를 공유하고 있는 모든 다른 객체 또한 영향을 받기 때문에 의도하지 않았다면 이를 막아야 한다.
+
+이것을 막는 하나의 방법은 특정 객체에서 참조한 객체를 변경하려고 할 때, `new` 를 통해 복제 후 변경하는 방식이다.
+
+# immutable value vs. mutable value
+
+`원시타입(primitive data type)` 은 변경불가능한 값(Immutable value) 이다. 원시타입을 제외한 모든 객체는 변경가능한 값이다.
+
+원시타입)
+
+- Boolean
+- null
+- undefined
+- Number
+- String
+- Symbol (New in ECMAScript 6)
+
+```JS
+var str = 'Hello';
+str = 'hi';
+```
+
+위 예제에서 str 은 변경되지 않았다. 단지 재할당이 일어난 것 뿐이다. 즉, 변수 str 는 가리키는 메모리 위치가 달라졌을 뿐이다. 메모리 상에는 'Hello', 'hi' 모두 존재한다.
+
+```JS
+User = {
+	name = "Kim",
+	age = 23,
+}
+
+var userName = User.name;
+
+User.name = "Heo";
+
+console.log(userName); //Kim
+```
+
+위 예제에서 userName 이라는 변경불가능한 원시타입 string 에 user.name 을 담았다. 따라서 User 의 값이 변경되어도, userName 의 값은 변경되지 않은 것이다.
+
+```JS
+User = {
+	name = "Kim",
+	age = 23,
+}
+
+var user1 = User;
+
+User.name = "Heo";
+
+console.log(user1.name); //Heo
+```
+
+반면, 위 경우엔 user1 이라는 변수가 User 객체를 직접 참조하고 있다. 따라서 User 의 name 이 바뀌면 user1 도 변경된다. 메모리 상에는 하나의 User 만 존재하고, 단지 두 개의 변수가 같은 곳을 가리킬 뿐이다.
+
+```JS
+var arr = [];
+console.log(arr.length); // 0
+
+var v2 = arr.push(2); // arr.push()는 메소드 실행 후 arr의 length를 반환
+console.log(arr.length); // 1
+```
+
+배열도 마찬가지로 객체이고 객체는 immutable value가 아닌 변경 가능한 값이기 때문에 배열을 직접 변경한다.
+
+간단하게 정리하자면,
+
+- Immutable value
+  - Primitive data type
+  - 변경불가능하고 재할당만 가능
+  - 메모리에 새로운 영역을 만들어 그곳을 가리킴
+    - 이전 데이터 여전히 메모리에 존재
+- Mutable value
+  - Object type
+  - 메모리 주소 원본이 그대로 참조됨. 즉, 원본을 변경할 수 있다.
+
+# Immutable Data Pattern
+
+의도하지 않은 객체의 변경이 일어나는 이유는, 객체는 mutable value 이고 따라서 레퍼런스 자체가 참조되기 때문이다. 이 경우 객체를 참조한 다른 객체에서 객체를 변경할 경우 객체를 참조한 다른 객체들도 영향을 받는다.
+
+이를 막을 수 있는 두 가지 방법이 있다. 첫번째는 객체를 불변객체로 만드는 것, 두 번째는 객체의 변경이 필요한 경우, 원본 객체를 변경하지 않고 복사본을 만들어 새로운 객체를 생성하는 것이다. 참고로 두 번째 방법을 `defensive copy(방어적 복사)` 라고 한다.
+
+- 불변객체화를 통한 객체의 변경 방지
+  - Object.freeze
+- 객체의 방어적 복사(defensive copy)
+  - Object.assign
+
+### Object.assign
+
+```JS
+// Syntax
+Object.assign(target, ...sources)
+```
+
+`target` 으로 `...sources` 객체들을 덮어쓰기 한다. 리턴값으로 `target` 객체를 반환한다.
+
+```JS
+//copy
+const o1 = { a = 1 };
+const o2 = Object.assign({}, o1);
+
+console.log(o2); //{ a = 1 }
+console.log(o1 == o2); //false. 얕은 복사
+
+//merge
+const o3 = { a = 1 };
+const o4 = { b = 1 };
+const o5 = { c = 1 };
+
+const merge1 = Object.assign(o3, o4, o5); //target = o3
+
+console.log(merge1); //{ a = 1, b = 1, c = 1 };
+console.log(o3); //{ a = 1, b = 1, c = 1 }; //o3 덮어쓰기
+
+//merge
+const o6 = { a = 1 };
+const o7 = { b = 1 };
+const o8 = { c = 1 };
+
+const merge2 = Object.assign({}, o6, o7, o8);
+
+console.log(merge2); //{ a = 1, b = 1, c = 1 };
+console.log(o6); //{ a = 1 };
+```
+
+`Objecy.assign()` 을 이용하여 객체의 방어적 복사를 할 수 있다. `deep copy` 는 지원하지 않고 `shallow copy` 만 가능하다.
+
+```JS
+const user1 = {
+	name = "heo",
+	address = {
+		city: "seoul",
+	}
+}
+
+//빈 객체에 user1 copy
+const user2 = Object.assign({}, user1);
+
+console.log(user1 === user2); //false. 둘이 참조값 다름
+
+user2.name = "kim";
+console.log(user1.name); //heo
+console.log(user2.name); //kim
+
+//Shallow copy 발생
+user2.address = "Busan";
+console.log(user1.address); //Busan
+console.log(user2.address); //Busan
+```
+
+주의할 점은 객체 내부의 프로퍼티는 보호가 안된다는 것이다. 원시타입이 아닌 이상, Object 가 프로퍼티인 경우 이 프로퍼티는 여전히 mutable value 다.
+
+### Object.freeze
+
+`Object.freeze` 를 사용하여 불변객체로 만들 수 있다.
+
+```JS
+const user1 = {
+	name: 'Heo',
+	address: {
+		city: 'Seoul',
+	}
+}
+
+const user2 = Object.assign({}, user1, {name: 'Kim'}); //deep copy x
+
+console.log(user1.name); //Heo
+console.log(user2.name); //Kim
+
+Ojbect.freeze(user1);
+
+user1.name = 'Lee'; //무시됨
+
+console.log(user1); //{ name: 'Heo', address: {city: 'Seoul'}}
+
+console.log(Object.isFrozon(user1)); //true
+```
+
+하지만 내부 객체는 변경가능하다.
+
+```JS
+const user1 = {
+	name: 'Heo',
+	address: {
+		city: 'Seoul',
+	}
+}
+
+Ojbect.freeze(user1);
+
+user1.address.city = 'Wonju';
+
+console.log(user1.address.city); //Wonju
+```
+
+내부 객체까지 변경하려면 Deep Freeze 하도록 만들어야 한다.
+
+```JS
+function DeepFreeze(obj) {
+
+	const props = Object.getOwnPropertyNames(obj);
+
+	props.forEach((name) => {
+		prop = obj[name];
+		if(typeof prop === 'Object' && prop !== null) {
+			DeepFreeze(prop);
+		}
+	})
+
+	return Object.freeze(obj);
+}
+```
+
+하지만 위 방법은 성능상 이슈가 있으므로, `Immutable.js` 를 사용하는 편이 낫다.
+
+```Shell
+$ npm install immutable
+```
+
+```JS
+const { Map } = require('immutable');
+const map1 = Map({ a: 1, b: 2, c: 3 });
+const map2 = map1.set('b', 50);
+map1.get('b') // 2
+map2.get('b') // 50
+```

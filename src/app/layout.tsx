@@ -30,6 +30,9 @@ export default function RootLayout({
           height: '100%',
           backgroundColor: 'white',
           color: 'black',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
         }}
       >
         {children}
