@@ -1,7 +1,5 @@
-import Main from './main/page'
+const Home = async (): React.ReactElement => {
+  return <h1>Home</h1>;
+};
 
-const Home = (): React.ReactElement => {
-  return <Main />
-}
-
-export default Home
+export default Home;
