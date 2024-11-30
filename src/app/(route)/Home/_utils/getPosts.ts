@@ -1,9 +1,10 @@
 import matter from 'gray-matter';
 import { promises as fs } from 'fs';
-import { Post } from '../Types/PostType';
+import { Post } from '../../../Types/Post';
 import getPostPaths from './getPostPaths';
 
 /**
+ * TODO: 날짜별 정렬
  * post 의 frontmatter 를 파싱하여 Post[] 반환
  */
 export default async function getPosts(): Promise<Post[]> {
@@ -15,7 +16,7 @@ export default async function getPosts(): Promise<Post[]> {
         const frontmatter = matter(data).data;
         return {
           title: frontmatter.title,
-          tags: [],
+          tags: frontmatter.tags,
           date: frontmatter.date,
           description: frontmatter.description,
         };

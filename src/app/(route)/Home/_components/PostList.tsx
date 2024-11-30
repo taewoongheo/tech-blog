@@ -1,4 +1,4 @@
-import { Post } from '../Types/PostType';
+import { Post } from '../../../Types/Post';
 
 export default function PostList({
   posts,
@@ -7,12 +7,13 @@ export default function PostList({
 }): React.ReactNode {
   return (
     <ul>
-      {posts.map((el) => {
+      {posts.map(({ title, tags, date, description }) => {
         return (
-          <li key={el.title}>
-            <h2>{el.title}</h2>
-            <p>{el.description}</p>
-            <p>published: {el.date}</p>
+          <li key={title}>
+            <h1>{title}</h1>
+            {tags.map((tag, i) => `${i ? ', ' : ''}${tag}`)}
+            <p>{date}</p>
+            <p>{description}</p>
           </li>
         );
       })}

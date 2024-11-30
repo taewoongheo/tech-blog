@@ -1,5 +1,6 @@
 import React from 'react';
 import Home from './(route)/Home/page';
+import { categories } from './Types/Category';
 
 // import dynamic from 'next/dynamic';
 
