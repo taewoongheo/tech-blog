@@ -5,8 +5,6 @@ const BASE_PATH = process.cwd();
 
 /**
  * 모든 Post 의 absolute path 반환. generateStaticParams() 를 위해 비동기 호출
- *
- * @returns {Promise<string[]>}
  */
 export const getAllPostPath = async (): Promise<string[]> => {
   const postPath = path.join(BASE_PATH, 'src', 'app', '_posts', '**/*.mdx');
@@ -21,8 +19,6 @@ export const getAllPostPath = async (): Promise<string[]> => {
 
 /**
  * 모든 Post 의 slug 반환.
- *
- * @returns {Promise<string[]>}
  */
 export const getAllPostSlugs = async (): Promise<string[]> => {
   try {
