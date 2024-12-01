@@ -8,13 +8,11 @@ export default function PostList({
 }): React.ReactNode {
   return (
     <ul>
-      {posts.map(({ year, month, date, slug, title, tags, description }) => {
+      {posts.map(({ slug, title, tags, date, description }) => {
         return (
           <li key={title}>
             <h1>
-              <Link href={`../../../${year}/${month}/${slug}.mdx`}>
-                {title}
-              </Link>
+              <Link href={`post/${slug}.mdx`}>{title}</Link>
             </h1>
             {tags.map((tag, i) => `${i ? ', ' : ''}${tag}`)}
             <p>{date}</p>
