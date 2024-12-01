@@ -1,6 +1,6 @@
 import matter from 'gray-matter';
 import { promises as fs } from 'fs';
-import { Post } from '../../../Types/Post';
+import { Post } from '../Types/Post';
 import getPostPaths from './getPostPaths';
 
 /**
@@ -15,9 +15,12 @@ export default async function getPosts(): Promise<Post[]> {
         const data = await fs.readFile(path, 'utf-8');
         const frontmatter = matter(data).data;
         return {
+          year: frontmatter.year,
+          month: frontmatter.month,
+          date: frontmatter.date,
+          slug: frontmatter.slug,
           title: frontmatter.title,
           tags: frontmatter.tags,
-          date: frontmatter.date,
           description: frontmatter.description,
         };
       }),

@@ -1,4 +1,5 @@
-import { Post } from '../../../Types/Post';
+import Link from 'next/link';
+import { Post } from '../Types/Post';
 
 export default function PostList({
   posts,
@@ -7,10 +8,14 @@ export default function PostList({
 }): React.ReactNode {
   return (
     <ul>
-      {posts.map(({ title, tags, date, description }) => {
+      {posts.map(({ year, month, date, slug, title, tags, description }) => {
         return (
           <li key={title}>
-            <h1>{title}</h1>
+            <h1>
+              <Link href={`../../../${year}/${month}/${slug}.mdx`}>
+                {title}
+              </Link>
+            </h1>
             {tags.map((tag, i) => `${i ? ', ' : ''}${tag}`)}
             <p>{date}</p>
             <p>{description}</p>

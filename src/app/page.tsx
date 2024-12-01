@@ -1,17 +1,8 @@
 import React from 'react';
-import Home from './(route)/Home/page';
-import { categories } from './Types/Category';
+import PostList from './_components/PostList';
+import getPosts from './_utils/getPosts';
 
-// import dynamic from 'next/dynamic';
-
-// const Home = dynamic(() => import('./(route)/Home/page'), {
-//   suspense: true,
-// });
-
-export default function Main(): React.ReactElement {
-  return (
-    <React.Suspense fallback={<div>loading</div>}>
-      <Home></Home>
-    </React.Suspense>
-  );
+export default async function Main(): Promise<React.ReactElement> {
+  const posts = await getPosts();
+  return <PostList posts={posts} />;
 }
