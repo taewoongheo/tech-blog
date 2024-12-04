@@ -1,15 +1,15 @@
 import matter from 'gray-matter';
 import { promises as fs } from 'fs';
 import { Post } from '../Types/Post';
-import getPostPaths from './getPostPaths';
+import { getAllPostPaths } from './getPostPaths';
 
 /**
  * TODO: 날짜별 정렬
  * post 의 frontmatter 를 파싱하여 Post[] 반환
  */
-export default async function getPosts(): Promise<Post[]> {
+export async function getAllPostFrontMatter(): Promise<Post[]> {
   try {
-    const paths = await getPostPaths();
+    const paths = await getAllPostPaths();
     const posts: Post[] = await Promise.all(
       paths.map(async (path) => {
         const data = await fs.readFile(path, 'utf-8');

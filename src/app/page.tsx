@@ -1,8 +1,8 @@
 import React from 'react';
 import PostList from './_components/PostList';
-import getPosts from './_utils/getPosts';
+import { getAllPostFrontMatter } from './_utils/getPosts';
 
 export default async function Main(): Promise<React.ReactElement> {
-  const posts = await getPosts();
+  const posts = await getAllPostFrontMatter();
   return <PostList posts={posts} />;
 }

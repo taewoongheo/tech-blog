@@ -1,11 +1,10 @@
-import getPostPaths from '@/app/_utils/getPostPaths';
 import path from 'path';
 import { promises as pfs } from 'fs';
-import { glob } from 'glob';
 import matter from 'gray-matter';
 import { compile, run } from '@mdx-js/mdx';
 import * as runtime from 'react/jsx-runtime';
 import { Metadata } from 'next';
+import { getAllPostPaths, getPostPath } from '@/app/_utils/getPostPaths';
 
 type Props = {
   params: { slug: string };
@@ -15,7 +14,7 @@ type Props = {
  * build 시점에 실행할 slug 반환
  */
 export async function generateStaticParams(): Promise<Props[]> {
-  const paths = await getPostPaths();
+  const paths = await getAllPostPaths();
   return paths.map((filePath) => ({
     params: { slug: path.basename(filePath, '.mdx') },
   }));
@@ -28,14 +27,7 @@ export async function generateStaticParams(): Promise<Props[]> {
  */
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const pathStr = path.join(
-    process.cwd(),
-    'src',
-    'app',
-    '_posts',
-    `**/${slug}.mdx`,
-  );
-  const postPath = (await glob(pathStr))[0];
+  const postPath = await getPostPath(slug);
 
   if (!pfs.access(postPath)) {
     return {
@@ -78,20 +70,14 @@ export default async function Post({
   params,
 }: Props): Promise<React.ReactNode> {
   const { slug } = await params;
-  const pathStr = path.join(
-    process.cwd(),
-    'src',
-    'app',
-    '_posts',
-    `**/${slug}.mdx`,
-  );
-  const postPath = (await glob(pathStr))[0];
+  const postPath = await getPostPath(slug);
+
   if (!pfs.access(postPath)) {
     return <h1>not found</h1>;
   }
+
   const data = await pfs.readFile(postPath, 'utf-8');
-  const content = matter(data).content;
-  const mdxSource = content;
+  const mdxSource = matter(data).content;
 
   const code = String(
     await compile(mdxSource, { outputFormat: 'function-body' }),
