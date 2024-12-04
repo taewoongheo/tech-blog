@@ -5,6 +5,7 @@ import { compile, run } from '@mdx-js/mdx';
 import * as runtime from 'react/jsx-runtime';
 import { Metadata } from 'next';
 import { getAllPostPaths, getPostPath } from '@/app/_utils/getPostPaths';
+import Giscus from './giscus';
 
 type Props = {
   params: { slug: string };
@@ -88,5 +89,10 @@ export default async function Post({
     baseUrl: import.meta.url,
   });
 
-  return <MDXContent />;
+  return (
+    <>
+      <MDXContent />
+      <Giscus />
+    </>
+  );
 }
