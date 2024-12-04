@@ -12,7 +12,7 @@ export default function PostList({
         return (
           <li key={title}>
             <h1>
-              <Link href={`post/${slug}.mdx`}>{title}</Link>
+              <Link href={`post/${slug}`}>{title}</Link>
             </h1>
             {tags.map((tag, i) => `${i ? ', ' : ''}${tag}`)}
             <p>{date}</p>
