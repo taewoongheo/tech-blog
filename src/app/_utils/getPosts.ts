@@ -2,9 +2,9 @@ import matter from 'gray-matter';
 import { promises as fs } from 'fs';
 import { Post } from '../Types/Post';
 import { getAllPostPaths } from './getPostPaths';
+import { compareDate } from './compareDate';
 
 /**
- * TODO: 날짜별 정렬
  * post 의 frontmatter 를 파싱하여 Post[] 반환
  */
 export async function getAllPostFrontMatter(): Promise<Post[]> {
@@ -23,6 +23,7 @@ export async function getAllPostFrontMatter(): Promise<Post[]> {
         };
       }),
     );
+    posts.sort(compareDate);
     return posts;
   } catch (err) {
     throw err;
