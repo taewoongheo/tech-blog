@@ -13,12 +13,15 @@ const config: Config = {
         xl: '20rem',
       },
       fontSize: {
-        title: '2rem',
-        sub: '1rem',
+        FStitle: '2rem',
+        FSsub: '1rem',
       },
       fontWeight: {
-        title: '500',
-        sub: '400',
+        FWtitle: '500',
+        FWsub: '400',
+      },
+      colors: {
+        FCmain: '#0000e7',
       },
       // fontFamily: {
       //   main: ['var(--mainfont)'],
