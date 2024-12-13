@@ -3,6 +3,9 @@ import PostList from './_components/PostList';
 import { getAllPostFrontMatter } from './_utils/getPosts';
 import Intro from './_components/Intro';
 
+/**
+ * html tag 로 seo 보완
+ */
 export default async function Main(): Promise<React.ReactElement> {
   const posts = await getAllPostFrontMatter();
   return (

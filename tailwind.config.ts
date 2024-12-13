@@ -20,6 +20,9 @@ const config: Config = {
         title: '500',
         sub: '400',
       },
+      // fontFamily: {
+      //   main: ['var(--mainfont)'],
+      // },
     },
   },
   plugins: [],
