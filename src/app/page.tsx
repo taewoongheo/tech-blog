@@ -11,12 +11,10 @@ export default async function Main(): Promise<React.ReactElement> {
   return (
     <div className="w-full h-full flex flex-col align-start px-all sm:px-sm md:px-md lg:px-lg xl:px-xl">
       {/* min-h-[400px] sm:min-h-[500px] lg:min-h-[600px] */}
-      <div className="flex min-h-[150px] sm:min-h-[170px] lg:min-h-[180px] xl:min-h-[190px] justify-center items-center">
+      <div className="flex min-h-all sm:min-h-sm md:min-h-md lg:min-h-lg xl:min-h-xl justify-center items-center">
         <Intro />
       </div>
-      <div className="bg-green-100">
-        <PostList posts={posts} />
-      </div>
+      <PostList posts={posts} />
     </div>
   );
 }
