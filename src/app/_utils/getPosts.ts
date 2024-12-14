@@ -20,6 +20,7 @@ export async function getAllPostFrontMatter(): Promise<Post[]> {
           tags: frontmatter.tags,
           date: frontmatter.date,
           description: frontmatter.description,
+          thumbnail: frontmatter.thumbnail,
         };
       }),
     );

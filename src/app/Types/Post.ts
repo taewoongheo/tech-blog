@@ -6,4 +6,5 @@ export type Post = {
   tags: Categories[];
   date: string;
   description: string;
+  thumbnail: string;
 };

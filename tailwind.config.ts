@@ -6,10 +6,10 @@ const config: Config = {
     extend: {
       // postlist padding horizontal on main page
       padding: {
-        all: '2rem',
-        sm: '4rem',
-        md: '8rem',
-        lg: '12rem',
+        all: '1rem',
+        sm: '6rem',
+        md: '10rem',
+        lg: '14rem',
         xl: '22rem',
       },
       // postlist margin top with intro
@@ -27,13 +27,13 @@ const config: Config = {
       },
       //text-[fontSize]
       fontSize: {
-        FStitle: '2rem',
+        FStitle: '2.6rem',
         FSsub: '1rem',
         FSptitle: '1.7rem',
       },
       //font-[fontWeight]
       fontWeight: {
-        FWtitle: '500',
+        FWtitle: '600',
         FWsub: '400',
       },
       //text-[colors]
@@ -43,6 +43,13 @@ const config: Config = {
       // fontFamily: {
       //   main: ['var(--mainfont)'],
       // },
+      //image size
+      spacing: {
+        sm: '5.5rem',
+        md: '6.5rem',
+        lg: '7.5rem',
+        xl: '8.5rem',
+      },
     },
   },
   plugins: [],
