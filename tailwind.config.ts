@@ -8,9 +8,9 @@ const config: Config = {
       padding: {
         all: '2rem',
         sm: '4rem',
-        md: '2rem',
-        lg: '6rem',
-        xl: '10rem',
+        md: '8rem',
+        lg: '12rem',
+        xl: '22rem',
       },
       //main intro min height
       minHeight: {
@@ -34,6 +34,9 @@ const config: Config = {
       //text-[colors]
       colors: {
         FCmain: '#0000e7',
+      },
+      variants: {
+        textColor: ['responsive', 'hover', 'focus', 'group-focus'],
       },
       // fontFamily: {
       //   main: ['var(--mainfont)'],
