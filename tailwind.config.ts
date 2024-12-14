@@ -4,7 +4,7 @@ const config: Config = {
   content: ['./src/**/*.{js,ts,jsx,tsx,mdx}'],
   theme: {
     extend: {
-      // main page padding horizontal
+      // postlist padding horizontal on main page
       padding: {
         all: '2rem',
         sm: '4rem',
@@ -12,13 +12,18 @@ const config: Config = {
         lg: '12rem',
         xl: '22rem',
       },
+      // postlist margin top with intro
+      margin: {
+        all: '0rem',
+        sm: '1rem',
+      },
       //main intro min height
       minHeight: {
         all: '200px',
-        sm: '210px',
-        md: '210px',
-        lg: '230px',
-        xl: '250px',
+        sm: '240px',
+        md: '260px',
+        lg: '280px',
+        xl: '300px',
       },
       //text-[fontSize]
       fontSize: {
@@ -34,9 +39,6 @@ const config: Config = {
       //text-[colors]
       colors: {
         FCmain: '#0000e7',
-      },
-      variants: {
-        textColor: ['responsive', 'hover', 'focus', 'group-focus'],
       },
       // fontFamily: {
       //   main: ['var(--mainfont)'],

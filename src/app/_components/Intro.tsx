@@ -3,7 +3,7 @@ import React from 'react';
 export default function Intro(): React.ReactNode {
   return (
     // md:flex-row
-    <section className="flex flex-col w-full h-full justify-end items-center pb-3">
+    <section className="flex flex-col w-full h-full justify-center items-center pt-3">
       {/* responsive: all*/}
       {/* <div className="flex-[0.6_0_0%] text-center bg-green-300 ">ascii art</div> */}
 
