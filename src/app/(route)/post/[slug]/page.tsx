@@ -41,8 +41,7 @@ export async function generateStaticParams(): Promise<Props[]> {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const postPath = await getPostPath(slug);
-
-  if (!pfs.access(postPath)) {
+  if (typeof postPath === 'string' && !pfs.access(postPath)) {
     return {
       title: 'post not found',
       description: 'post not fonud',
@@ -94,7 +93,7 @@ export default async function Post({
   const mdxSource = matter(data);
   const mdxMeta = mdxSource.data;
   const title = mdxMeta.title;
-  // const thumnail = mdxMeta.thumnail;
+  // const thumnail = mdx
   const mdxContent = mdxSource.content;
 
   const code = String(

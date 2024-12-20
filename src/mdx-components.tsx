@@ -1,7 +1,7 @@
 import type { MDXComponents } from 'mdx/types';
 
 /**
- * TODO: 반응형, `, code block, link, 이미지
+ * TODO: 이미지
  */
 export function useMDXComponents(components: MDXComponents): MDXComponents {
   return {
@@ -40,6 +40,7 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
         {children}
       </pre>
     ),
+    em: ({ children }) => <span className="text-FCmain">{children}</span>,
     ...components,
   };
 }

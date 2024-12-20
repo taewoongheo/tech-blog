@@ -12,10 +12,10 @@ export default function Intro(): React.ReactNode {
           허태웅 기술 블로그
         </h1>
         <p className="text-FCmain text-FSsub font-FWsub">
-          배우고 고민한 흔적들을 공유합니다.
+          배우고 고민한 흔적들을 공유합니다
         </p>
         <p className="text-FCmain text-FSsub font-FWsub pb-4">
-          깊게 고민하고 쉽게 설명하려 노력해요.
+          깊게 고민하고 쉽게 설명하려 노력해요
         </p>
       </div>
 
