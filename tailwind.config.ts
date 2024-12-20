@@ -27,7 +27,7 @@ const config: Config = {
       },
       //text-[fontSize]
       fontSize: {
-        FStitle: '2.6rem',
+        FStitle: '2.3rem',
         FSsub: '1rem',
         FSptitle: '1.7rem',
       },

@@ -22,6 +22,7 @@
   "rules": {
     "prettier/prettier": ["error"],
     "react/react-in-jsx-scope": "off",
+    "react-hooks/rules-of-hooks": "no",
     "import/order": [
       "error",
       { "groups": [["builtin", "external", "internal"]] }

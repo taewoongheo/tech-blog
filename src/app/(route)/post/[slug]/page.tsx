@@ -5,10 +5,22 @@ import { compile, run } from '@mdx-js/mdx';
 import * as runtime from 'react/jsx-runtime';
 import { Metadata } from 'next';
 import { getAllPostPaths, getPostPath } from '@/app/_utils/getPostPaths';
+import { useMDXComponents } from '@/mdx-components';
+import rehypePrettyCode, { Options } from 'rehype-pretty-code';
 import Giscus from './giscus';
 
 type Props = {
   params: { slug: string };
+};
+
+const options: Options = {
+  theme: 'github-light',
+  keepBackground: false,
+  bypassInlineCode: false,
+  defaultLang: {
+    block: 'plaintext',
+    inline: 'plaintext',
+  },
 };
 
 /**
@@ -70,6 +82,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function Post({
   params,
 }: Props): Promise<React.ReactNode> {
+  const components = useMDXComponents({});
   const { slug } = await params;
   const postPath = await getPostPath(slug);
 
@@ -81,7 +94,10 @@ export default async function Post({
   const mdxSource = matter(data).content;
 
   const code = String(
-    await compile(mdxSource, { outputFormat: 'function-body' }),
+    await compile(mdxSource, {
+      outputFormat: 'function-body',
+      rehypePlugins: [[rehypePrettyCode, options]],
+    }),
   );
 
   const { default: MDXContent } = await run(code, {
@@ -91,7 +107,7 @@ export default async function Post({
 
   return (
     <>
-      <MDXContent />
+      <MDXContent components={components} />
       <Giscus />
     </>
   );

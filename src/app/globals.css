@@ -10,6 +10,12 @@ body {
   overflow-x: hidden;
 }
 
+:root {
+  --mainfontcolor: #0000e7;
+  --codeBlockBackgroundColor: #f9f9f9;
+  --codeBlockOutlineColor: #e1e1e1;
+}
+
 * {
   box-sizing: border-box;
   padding: 0;
@@ -21,12 +27,27 @@ a {
   text-decoration: none;
 }
 
-/* :root {
-  --background: blue;
-  --foreground: #171717;
-} 
+/* inline code */
+code[data-language='plaintext'] {
+  background-color: var(--codeBlockBackgroundColor);
+  outline: 1px solid var(--codeBlockOutlineColor);
+  border-radius: 0.3rem;
+  color: var(--mainfontcolor);
+  font-family: 'Pretendard';
+  padding: 1px 4px;
+}
 
-@media (prefers-color-scheme: dark) {
+/* code block */
+pre > code {
+  background-color: var(--codeBlockBackgroundColor);
+  outline: 1px solid var(--codeBlockOutlineColor);
+  font-size: 0.9rem;
+  border-radius: 0.3rem;
+  padding: 16px;
+  overflow-x: auto; /* 가로 스크롤 */
+}
+
+/* @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;

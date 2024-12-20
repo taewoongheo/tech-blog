@@ -7,28 +7,40 @@ description: '자바스크립트 비동기처리 이해하기'
 thumbnail: ''
 ---
 
-## Promise
+# Promise
 
 ES6 이전의 자바스크립트는 비동기처리를 위해 콜백함수를 사용했다. 하지만 그러한 방식은 비동기처리가 많아질 수록 깊이가 깊어져, 콜백지옥을 만드는 문제점이 있다.
 
-이를 개선한 것이 Promise 함수다.
+이를 개선한 것이 Promise`Promise` 함수다.
 
-#### How to use Promise
+## How to use Promise
 
-```JS
-const myPromise = new Promise((resolve, reject) => {
-  // 구현..
-})
+how to use `promise`
+
+### h3
+
+h3 content
+
+#### h4
+
+h4 content
+
+```js
+const myPromiseincreaseAndPrintincreaseAndPrintiincreaseAndPrintncreaseAndPrint =
+  new Promise((resolve, rejecthaissdsdqwerqweqwerqrqwerqwre) => {
+    haissdsdqwerqweqwerqrqwerqwre;
+    // 구현..
+  });
 ```
 
 promise 호출은 성공할 수도, 실패할 수도 있다. resolve는 성공한 경우, reject는 실패한 경우다.
 
 원래 같으면 콜백지옥이 되는 코드를 이렇게 바꿀 수 있다.
 
-```JS
+```js
 function increaseAndPrint(n) {
   return new Promise((resolve, reject) => {
-	//구현기능(API호출 등)
+    //구현기능(API호출 등)
     setTimeout(() => {
       const value = n + 1;
       if (value === 5) {
@@ -49,7 +61,7 @@ increaseAndPrint(0)
   .then(increaseAndPrint)
   .then(increaseAndPrint)
   .then(increaseAndPrint)
-  .catch(e => {
+  .catch((e) => {
     console.error(e);
   });
 ```
@@ -65,15 +77,15 @@ Promise 생성자는 promise 객체를 반환한다. promise 객체에는 크게
 
 Promise 단점: 디버깅힘듦, 데이터공유될 시 처리 힘듦
 
-## then, catch, finally
+# then, catch, finally
 
-#### then
+## then
 
 결과(성공, 실패)를 반환하는 메서드다.
 첫번째 인자는 성공한 경우 - result
 두번째 인자는 실패한 경우 - error
 
-```JS
+```js
 promise.then(
 	console.log(result) //성공한 경우
 	console.log(error) //실패한 경우
@@ -82,7 +94,7 @@ promise.then(
 
 성공한 경우만 다루고 싶다면 인자를 하나만 넣으면 된다(첫번째 인자)
 
-```JS
+```js
 const promise => () => {
 	//함수정의
 }
@@ -92,29 +104,29 @@ promise.then(function(result) {
 });
 ```
 
-#### catch
+## catch
 
 실패한 경우만 다루고 싶다면 catch를 사용한다.
 
 사실은 then 메서드의 첫번째 인자가 성공한 경우이기 때문에, 첫번째 인자를 null 로 처리하고 then을 쓰는거랑 같다.
 
-```JS
+```js
 promise.then(null, errorHandlerFunction) {
 	console.log(errorHandlerFunction);
 }
 ```
 
-```JS
+```javascript
 promise.catch(function(error) => {
 	console.log(error);
 })
 ```
 
-#### finally
+## finally
 
 Promise의 결과가 어떻든 종료되었는지 여부를 검사
 
-```JS
+```javascript
 new Promise((resolve, rejecct) => {
 	//시간이 걸리는 로직
 }).finally(()=>{로딩 바 없애기})

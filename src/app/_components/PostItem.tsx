@@ -29,7 +29,7 @@ export default function PostItem({ post }: { post: Post }): React.ReactNode {
       </div>
       <div className="flex-[0.3_0_0%] justify-center items-start sm:items-center flex">
         <div className="outline w-16 h-16 sm:w-sm sm:h-sm md:w-md md:h-md lg:w-lg lg:h-lg xl:w-xl xl:h-xl rounded-sm">
-          image
+          no image
         </div>
       </div>
     </div>
