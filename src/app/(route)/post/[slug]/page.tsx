@@ -91,10 +91,14 @@ export default async function Post({
   }
 
   const data = await pfs.readFile(postPath, 'utf-8');
-  const mdxSource = matter(data).content;
+  const mdxSource = matter(data);
+  const mdxMeta = mdxSource.data;
+  const title = mdxMeta.title;
+  // const thumnail = mdxMeta.thumnail;
+  const mdxContent = mdxSource.content;
 
   const code = String(
-    await compile(mdxSource, {
+    await compile(mdxContent, {
       outputFormat: 'function-body',
       rehypePlugins: [[rehypePrettyCode, options]],
     }),
@@ -107,6 +111,9 @@ export default async function Post({
 
   return (
     <>
+      <div className="mb-5">
+        <h1 className="text-5xl font-semibold">{title}</h1>
+      </div>
       <MDXContent components={components} />
       <Giscus />
     </>
