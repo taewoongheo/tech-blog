@@ -9,9 +9,7 @@ import { useMDXComponents } from '@/mdx-components';
 import rehypePrettyCode, { Options } from 'rehype-pretty-code';
 import Giscus from './giscus';
 
-type Props = Promise<{
-  params: { slug: string };
-}>;
+type Params = Promise<{ slug: string }>;
 
 const options: Options = {
   theme: 'github-light',
@@ -26,10 +24,10 @@ const options: Options = {
 /**
  * build 시점에 실행할 slug 반환
  */
-export async function generateStaticParams(): Promise<Props[]> {
+export async function generateStaticParams(): Promise<Params[]> {
   const paths = await getAllPostPaths();
   return paths.map(async (filePath) => ({
-    params: { slug: path.basename(filePath, '.mdx') },
+    slug: path.basename(filePath, '.mdx'),
   }));
 }
 
@@ -38,9 +36,10 @@ export async function generateStaticParams(): Promise<Props[]> {
  *
  * TODO: metadataBase 설정: OG, Canonical URL
  */
-export async function generateMetadata(params: Props): Promise<Metadata> {
-  const resolvedProps = await params;
-  const slug = resolvedProps.params.slug;
+export async function generateMetadata(props: {
+  params: Params;
+}): Promise<Metadata> {
+  const slug = (await props.params).slug;
   const postPath = await getPostPath(slug);
   if (typeof postPath === 'string' && !pfs.access(postPath)) {
     return {
@@ -79,10 +78,11 @@ export async function generateMetadata(params: Props): Promise<Metadata> {
 /**
  * TODO: slug 가 겹치지 않도록 보장해야함.
  */
-export default async function Post(params: Props): Promise<React.ReactNode> {
+export default async function Post(props: {
+  params: Params;
+}): Promise<React.ReactNode> {
   const components = useMDXComponents({});
-  const resolvedProps = await params;
-  const slug = resolvedProps.params.slug;
+  const slug = (await props.params).slug;
   const postPath = await getPostPath(slug);
 
   if (!pfs.access(postPath)) {
