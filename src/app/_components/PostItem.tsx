@@ -3,7 +3,8 @@ import { Post } from '../Types/Post';
 import Tag from './Tag';
 
 export default function PostItem({ post }: { post: Post }): React.ReactNode {
-  const { title, tags, date, description, thumbnail } = post;
+  //{thumnail} = post
+  const { title, tags, date, description } = post;
   const year = date.slice(0, 4);
   const month = date.slice(5, 7);
   const dates = date.slice(8, 9);
