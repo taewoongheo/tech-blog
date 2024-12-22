@@ -11,7 +11,7 @@ export async function getAllPostPaths(): Promise<string[]> {
   try {
     return glob(postPath);
   } catch (err) {
-    throw err;
+    throw new Error("can't find glob");
   }
 }
 
@@ -29,7 +29,6 @@ export async function getPostPath(slug: string): Promise<string> {
   try {
     return (await glob(pathStr))[0];
   } catch (err) {
-    console.error(err);
-    throw err;
+    throw new Error("can't find absolute post path");
   }
 }

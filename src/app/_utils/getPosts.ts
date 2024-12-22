@@ -27,6 +27,6 @@ export async function getAllPostFrontMatter(): Promise<Post[]> {
     posts.sort(compareDate);
     return posts;
   } catch (err) {
-    throw err;
+    throw new Error("can't parsing frontmatter");
   }
 }
