@@ -10,7 +10,7 @@ export async function getAllPostPaths(): Promise<string[]> {
   const postPath = path.join(BASE_PATH, 'src', 'app', '_posts', '**/*.mdx');
   try {
     return glob(postPath);
-  } catch (err) {
+  } catch {
     throw new Error("can't find glob");
   }
 }
@@ -28,7 +28,7 @@ export async function getPostPath(slug: string): Promise<string> {
   );
   try {
     return (await glob(pathStr))[0];
-  } catch (err) {
+  } catch {
     throw new Error("can't find absolute post path");
   }
 }
