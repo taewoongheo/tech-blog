@@ -1,8 +1,16 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  /**
+   * Enable static exports for the App Router.
+   */
   output: 'export',
+
+  distDir: 'hi',
+  /**
+   * Disable server-based image optimization. Next.js does not support
+   * dynamic features with static exports.
+   */
   images: {
     unoptimized: true,
   },
