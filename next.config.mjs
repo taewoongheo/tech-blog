@@ -2,11 +2,16 @@ import createMDX from '@next/mdx';
 
 /**This allows .md and .mdx files to act as pages, routes, or imports in your application. */
 
+const idProd = process.env.NODE_ENV === 'production';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Configure `pageExtensions` to include markdown and MDX files
+  output: 'export',
+  basePath: idProd ? '/tech-blog' : '',
+  images: {
+    unoptimized: true,
+  },
   pageExtensions: ['js', 'jsx', 'md', 'mdx', 'ts', 'tsx'],
-  // Optionally, add any other Next.js config below
 };
 
 const withMDX = createMDX({

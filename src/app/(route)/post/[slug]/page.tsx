@@ -9,7 +9,7 @@ import { useMDXComponents } from '@/mdx-components';
 import rehypePrettyCode, { Options } from 'rehype-pretty-code';
 import Giscus from './giscus';
 
-type Params = Promise<{ slug: string }>;
+type params = { slug: string };
 
 const options: Options = {
   theme: 'github-light',
@@ -24,11 +24,14 @@ const options: Options = {
 /**
  * build 시점에 실행할 slug 반환
  */
-export async function generateStaticParams(): Promise<Params[]> {
+export async function generateStaticParams(): Promise<params[]> {
   const paths = await getAllPostPaths();
-  return paths.map(async (filePath) => ({
-    slug: path.basename(filePath, '.mdx'),
-  }));
+  const slugs = await Promise.all(
+    paths.map(async (filePath) => ({
+      slug: path.basename(filePath, '.mdx'),
+    })),
+  );
+  return slugs;
 }
 
 /**
@@ -36,25 +39,15 @@ export async function generateStaticParams(): Promise<Params[]> {
  *
  * TODO: metadataBase 설정: OG, Canonical URL
  */
-export async function generateMetadata(props: {
-  params: Params;
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<params>;
 }): Promise<Metadata> {
-  const slug = (await props.params).slug;
+  const slug = (await params).slug;
   const postPath = await getPostPath(slug);
   if (typeof postPath === 'string' && !pfs.access(postPath)) {
-    return {
-      title: 'post not found',
-      description: 'post not fonud',
-      referrer: 'origin-when-cross-origin',
-      generator: 'Next.js',
-      applicationName: 'TaewoongHeo Tech Blog',
-      keywords: [],
-      formatDetection: {
-        email: false,
-        address: false,
-        telephone: false,
-      },
-    };
+    throw new Error("can't find path");
   }
 
   const data = await pfs.readFile(postPath, 'utf-8');
@@ -78,11 +71,13 @@ export async function generateMetadata(props: {
 /**
  * TODO: slug 가 겹치지 않도록 보장해야함.
  */
-export default async function Post(props: {
-  params: Params;
+export default async function Post({
+  params,
+}: {
+  params: Promise<params>;
 }): Promise<React.ReactNode> {
   const components = useMDXComponents({});
-  const slug = (await props.params).slug;
+  const slug = (await params).slug;
   const postPath = await getPostPath(slug);
 
   if (!pfs.access(postPath)) {
