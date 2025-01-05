@@ -4,7 +4,7 @@ import matter from 'gray-matter';
 import { compile, run } from '@mdx-js/mdx';
 import * as runtime from 'react/jsx-runtime';
 import { Metadata } from 'next';
-import { getAllPostPaths, getPostPath } from '@/app/_utils/getPostPaths';
+import { getAllPostPaths, getPostPath } from '@/app/_utils/get-post-paths';
 import { useMDXComponents } from '@/mdx-components';
 import rehypePrettyCode, { Options } from 'rehype-pretty-code';
 import Giscus from './giscus';

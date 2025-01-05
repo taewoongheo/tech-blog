@@ -9,26 +9,26 @@ export default function PostItem({ post }: { post: Post }): React.ReactNode {
   const month = date.slice(5, 7);
   const dates = date.slice(8, 9);
   return (
-    <div className="flex">
-      <div className="flex-[0.8_0_0%] pb-8">
+    <div className="flex justify-between">
+      <div className="pb-8">
+        <h1 className="font-[500] text-[1.2rem] sm:text-[1.4rem] mb-[0.2rem] group-hover:text-main">
+          {title}
+        </h1>
+        <p className="text-[#969696] text-[0.8rem] sm:text-[0.9rem] mb-[0.3rem]">
+          {description}
+        </p>
+        <p className="text-[#969696] text-[0.8rem] sm:text-[0.9rem]">
+          {year}.{month.length >= 2 ? month : `0${month}`}.
+          {dates.length >= 2 ? dates : `0${dates}`}
+        </p>
         <div>
           {tags.map((tag, i) => (
             <Tag key={(tag + i).toString()} tag={tag} />
           ))}
         </div>
-        <h1 className="font-[500] text-[1.2rem] sm:text-[1.5rem] md:text-[1.4rem] lg:text-[1.7rem] mb-1 group-hover:text-FCmain">
-          {title}
-        </h1>
-        <p className="text-[#969696] text-[0.8rem] sm:text-[1rem]">
-          {description}
-        </p>
-        <p className="text-[#969696] text-[0.8rem] sm:text-[1rem]">
-          {year}.{month.length >= 2 ? month : `0${month}`}.
-          {dates.length >= 2 ? dates : `0${dates}`}
-        </p>
       </div>
-      <div className="flex-[0.3_0_0%] justify-center items-start sm:items-center flex">
-        <div className="outline w-16 h-16 sm:w-sm sm:h-sm md:w-md md:h-md lg:w-lg lg:h-lg xl:w-xl xl:h-xl rounded-sm">
+      <div className="flex justify-center items-start pr-1">
+        <div className="outline w-20 h-20 sm:w-24 sm:h-24 rounded-sm">
           no image
         </div>
       </div>

@@ -1,8 +1,8 @@
 import matter from 'gray-matter';
 import { promises as fs } from 'fs';
 import { Post } from '../Types/Post';
-import { getAllPostPaths } from './getPostPaths';
-import { compareDate } from './compareDate';
+import { getAllPostPaths } from './get-post-paths';
+import { compareDate } from './compare-date';
 
 /**
  * post 의 frontmatter 를 파싱하여 Post[] 반환
