@@ -1,6 +1,6 @@
 import createMDX from '@next/mdx';
 
-/**This allows .md and .mdx files to act as pages, routes, or imports in your application. */
+/** This allows .md and .mdx files to act as pages, routes, or imports in your application. */
 
 const idProd = process.env.NODE_ENV === 'production';
 

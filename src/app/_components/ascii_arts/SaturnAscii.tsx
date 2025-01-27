@@ -1,3 +1,7 @@
+/* eslint no-useless-escape: "off" */
+
+import React from 'react';
+
 export default function SaturnAscii(): React.ReactNode {
   const saturn = `                                                                                                                                                                 
                 .....                                                                                                                                 

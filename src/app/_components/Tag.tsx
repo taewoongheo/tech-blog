@@ -1,3 +1,4 @@
+import React from 'react';
 import { Categories } from '../Types/Category';
 
 export default function Tag({ tag }: { tag: Categories }): React.ReactNode {

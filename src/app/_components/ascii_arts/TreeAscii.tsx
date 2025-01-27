@@ -1,3 +1,7 @@
+/* eslint no-useless-escape: "off" */
+
+import React from 'react';
+
 export default function TreeAscii(): React.ReactNode {
   const tree = `                                                                                                                                
                                                                                                                                                                           

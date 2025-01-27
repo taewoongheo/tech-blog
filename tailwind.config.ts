@@ -4,7 +4,7 @@ const config: Config = {
   content: ['./src/**/*.{js,ts,jsx,tsx,mdx}'],
   theme: {
     extend: {
-      //text-[colors]
+      // text-[colors]
       colors: {
         main: '#0000e7',
       },

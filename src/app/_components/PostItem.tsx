@@ -3,7 +3,7 @@ import { Post } from '../Types/Post';
 import Tag from './Tag';
 
 export default function PostItem({ post }: { post: Post }): React.ReactNode {
-  //{thumnail} = post
+  // {thumnail} = post
   const { title, tags, date, description } = post;
   const year = date.slice(0, 4);
   const month = date.slice(5, 7);
@@ -14,12 +14,11 @@ export default function PostItem({ post }: { post: Post }): React.ReactNode {
         <h1 className="font-[500] text-[1.2rem] sm:text-[1.4rem] mb-[0.2rem] group-hover:text-main">
           {title}
         </h1>
-        <p className="text-[#969696] text-[0.8rem] sm:text-[0.9rem] mb-[0.3rem]">
+        <p className="text-[#969696] text-[0.8rem] sm:text-[0.9rem] mb-[0.8rem]">
           {description}
         </p>
         <p className="text-[#969696] text-[0.8rem] sm:text-[0.9rem]">
-          {year}.{month.length >= 2 ? month : `0${month}`}.
-          {dates.length >= 2 ? dates : `0${dates}`}
+          {`${year}.${month.length >= 2 ? month : `0${month}`}.${dates.length >= 2 ? dates : `0${dates}`}`}
         </p>
         <div>
           {tags.map((tag, i) => (

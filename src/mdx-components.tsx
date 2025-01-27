@@ -1,9 +1,12 @@
+import React from 'react';
 import type { MDXComponents } from 'mdx/types';
 
 /**
  * TODO: 이미지
  */
-export function useMDXComponents(components: MDXComponents): MDXComponents {
+export default function useMDXComponents(
+  components: MDXComponents,
+): MDXComponents {
   return {
     h1: ({ children }) => (
       <h1 className="text-3xl font-semibold mb-3">{children}</h1>
@@ -34,7 +37,7 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
       <ul className="list-disc pl-8 my-5 text-gray-700">{children}</ul>
     ),
     li: ({ children }) => <li className="mb-3 leading-7">{children}</li>,
-    //rehype-pretty-code 가 생성하는 class 를 덮어씌움
+    // rehype-pretty-code 가 생성하는 class 를 덮어씌움
     pre: ({ children }) => (
       <pre tabIndex={-1} className="mb-3">
         {children}

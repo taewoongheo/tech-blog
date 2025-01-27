@@ -1,12 +1,13 @@
+import React from 'react';
 import path from 'path';
 import { promises as pfs } from 'fs';
 import matter from 'gray-matter';
 import { compile, run } from '@mdx-js/mdx';
 import * as runtime from 'react/jsx-runtime';
 import { Metadata } from 'next';
-import { getAllPostPaths, getPostPath } from '@/app/_utils/get-post-paths';
-import { useMDXComponents } from '@/mdx-components';
 import rehypePrettyCode, { Options } from 'rehype-pretty-code';
+import { getAllPostPaths, getPostPath } from '@/app/_utils/get-post-path';
+import { useMDXComponents } from '@/mdx-components';
 import Giscus from './giscus';
 
 type params = { slug: string };
@@ -44,7 +45,7 @@ export async function generateMetadata({
 }: {
   params: Promise<params>;
 }): Promise<Metadata> {
-  const slug = (await params).slug;
+  const { slug } = await params;
   const postPath = await getPostPath(slug);
   if (typeof postPath === 'string' && !pfs.access(postPath)) {
     throw new Error("can't find path");
@@ -77,7 +78,7 @@ export default async function Post({
   params: Promise<params>;
 }): Promise<React.ReactNode> {
   const components = useMDXComponents({});
-  const slug = (await params).slug;
+  const { slug } = await params;
   const postPath = await getPostPath(slug);
 
   if (!pfs.access(postPath)) {
@@ -87,7 +88,7 @@ export default async function Post({
   const data = await pfs.readFile(postPath, 'utf-8');
   const mdxSource = matter(data);
   const mdxMeta = mdxSource.data;
-  const title = mdxMeta.title;
+  const { title } = mdxMeta;
   // const thumnail = mdx
   const mdxContent = mdxSource.content;
 

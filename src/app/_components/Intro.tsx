@@ -7,7 +7,7 @@ import TreeAscii from './ascii_arts/TreeAscii';
 
 export default function Intro(): React.ReactNode {
   return (
-    <section className="flex flex-col lg:flex-row justify-center items-center py-20 mx-20">
+    <section className="flex flex-col lg:flex-row justify-center items-center py-20">
       <div className="flex-1 flex flex-col justify-center h-full min-w-[300px]">
         <div className="flex justify-center">
           <TreeAscii />
