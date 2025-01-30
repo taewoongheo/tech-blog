@@ -3,39 +3,45 @@ import Image from 'next/image';
 import { Post } from '../Types/Post';
 import Tag from './Tag';
 
-export default function PostItem({ post }: { post: Post }): React.ReactNode {
+export default function PostItem({ post }: { post: Post }) {
   const { title, tags, date, description, thumbnail } = post;
   const year = date.slice(0, 4);
   const month = date.slice(5, 7);
   const dates = date.slice(8, 9);
+
   return (
-    <div className="flex justify-between">
-      <div className="pb-8">
-        <h1 className="font-[500] text-[1.2rem] sm:text-[1.4rem] mb-[0.2rem] group-hover:text-main">
-          {title}
-        </h1>
-        <p className="text-[#969696] text-[0.8rem] sm:text-[0.9rem] mb-[0.8rem]">
-          {description}
-        </p>
-        <p className="text-[#969696] text-[0.8rem] sm:text-[0.9rem]">
-          {`${year}.${month.length >= 2 ? month : `0${month}`}.${dates.length >= 2 ? dates : `0${dates}`}`}
-        </p>
-        <div>
-          {tags.map((tag, i) => (
-            <Tag key={(tag + i).toString()} tag={tag} />
+    <div className="flex justify-between items-center hover:cursor-pointer group gap-4">
+      {/* Content Section */}
+      <div className="flex-1">
+        {/* Tags */}
+        <div className="flex gap-2 mb-2">
+          {tags.map((tag) => (
+            <Tag key={tag.toString()} tag={tag} />
           ))}
         </div>
+
+        {/* Title */}
+        <h1 className="text-[21px] font-medium mb-2 group-hover:text-main">
+          {title}
+        </h1>
+
+        {/* Description */}
+        <p className="text-gray-400 text-sm mb-2">{description}</p>
+
+        {/* Date */}
+        <p className="text-gray-400 text-sm">
+          {`${year}.${month.length >= 2 ? month : `0${month}`}.${dates.length >= 2 ? dates : `0${dates}`}`}
+        </p>
       </div>
-      <div className="flex justify-center items-start pr-1">
-        <div className="relative w-full max-w-[600px] aspect-[600/380] mx-4 my-10">
-          {/* 이미지 흑백화 */}
-          <Image
-            src={thumbnail}
-            alt=""
-            fill
-            style={{ objectFit: 'cover', borderRadius: '8px' }}
-          />
-        </div>
+
+      {/* Thumbnail */}
+      <div className="relative w-[150px] aspect-[1.2/1] rounded-lg overflow-hidden flex-shrink-0">
+        <Image
+          src={thumbnail}
+          alt=""
+          fill
+          className="object-cover transition-all duration-300 group-hover:scale-105 filter grayscale"
+        />
       </div>
     </div>
   );

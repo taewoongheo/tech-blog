@@ -11,6 +11,7 @@ import { getAllPostPaths, getPostPath } from '@/app/_utils/get-post-path';
 import Giscus from './giscus';
 import useMDXComponents from '@/mdx-components';
 import Tag from '@/app/_components/Tag';
+import { Categories } from '@/app/Types/Category';
 
 type params = { slug: string };
 
@@ -107,18 +108,31 @@ export default async function Post({
 
   return (
     <>
-      <div className="flex flex-col items-center justify-center mb-5 mt-4 lg:mt-10">
-        <div className="flex flex-col w-full items-start">
-          {tags.map((tag, i) => (
-            <Tag key={(tag + i).toString()} tag={tag} />
-          ))}
-          <h1 className="text-4xl lg:text-5xl font-medium leading-[2.8rem] lg:leading-[4rem]">
+      <div className="flex flex-col items-center justify-center my-8 lg:my-12">
+        <div className="flex flex-col w-full items-start space-y-6">
+          {/* Tags */}
+          <div className="space-y-1">
+            {tags.map((tag: Categories) => (
+              <Tag key={tag.toString()} tag={tag} />
+            ))}
+          </div>
+
+          {/* Title */}
+          <h1 className="text-4xl lg:text-5xl font-[600] leading-[2.8rem] lg:leading-[4rem]">
             {title}
           </h1>
-          <p className="text-[#969696]">{description}</p>
-          <p className="text-[#969696]">{date}</p>
+
+          {/* Description and Date */}
+          <div className="space-y-2">
+            <p className="font-[var(--mainfont)] text-[#969696]">
+              {description}
+            </p>
+            <p className="font-[var(--mainfont)] text-[#969696]">{date}</p>
+          </div>
         </div>
-        <div className="relative w-full max-w-[600px] aspect-[600/380] mx-4 my-10">
+
+        {/* Thumbnail Image */}
+        <div className="relative w-full max-w-[700px] aspect-[600/380] my-12 lg:my-16">
           <Image
             src={thumbnail}
             alt=""
@@ -127,8 +141,16 @@ export default async function Post({
           />
         </div>
       </div>
-      <MDXContent components={components} />
-      <Giscus />
+
+      {/* Content */}
+      <div className="mb-16">
+        <MDXContent components={components} />
+      </div>
+
+      {/* Comments */}
+      <div className="mt-16">
+        <Giscus />
+      </div>
     </>
   );
 }

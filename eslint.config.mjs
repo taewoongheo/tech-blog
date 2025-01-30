@@ -50,6 +50,7 @@ export default [
       'import/extensions': ['error', { tsx: 'always', ts: 'always' }],
       'no-shadow': 'off',
       'object-curly-newline': 'off',
+      'react/jsx-one-expression-per-line': 'off',
     },
     settings: {
       react: {
