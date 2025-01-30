@@ -118,16 +118,14 @@ export default async function Post({
           </div>
 
           {/* Title */}
-          <h1 className="text-4xl lg:text-5xl font-[600] leading-[2.8rem] lg:leading-[4rem]">
+          <h1 className="font-main text-4xl lg:text-5xl font-[600] leading-[2.8rem] lg:leading-[4rem]">
             {title}
           </h1>
 
           {/* Description and Date */}
           <div className="space-y-2">
-            <p className="font-[var(--mainfont)] text-[#969696]">
-              {description}
-            </p>
-            <p className="font-[var(--mainfont)] text-[#969696]">{date}</p>
+            <p className="font-main text-[#969696]">{description}</p>
+            <p className="font-main text-[#969696]">{date}</p>
           </div>
         </div>
 
@@ -137,7 +135,7 @@ export default async function Post({
             src={thumbnail}
             alt=""
             fill
-            style={{ objectFit: 'cover', borderRadius: '8px' }}
+            style={{ objectFit: 'cover', borderRadius: '6px' }}
           />
         </div>
       </div>
@@ -148,7 +146,7 @@ export default async function Post({
       </div>
 
       {/* Comments */}
-      <div className="mt-16">
+      <div className="my-16">
         <Giscus />
       </div>
     </>

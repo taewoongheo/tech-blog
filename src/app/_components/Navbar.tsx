@@ -6,7 +6,7 @@ export default function Navbar(): React.ReactNode {
     <div className="flex justify-between items-center w-full p-4">
       <Link
         href="/"
-        className="text-[0.8rem] md:text-[0.9rem] lg:text-[1rem] font-[400] sm:pl-10 hover:text-main"
+        className="font-main text-[0.8rem] md:text-[0.9rem] lg:text-[1rem] font-[400] sm:pl-10 hover:text-main"
       >
         TAEWOONGHEO_TECH_BLOG
       </Link>

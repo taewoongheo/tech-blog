@@ -21,15 +21,17 @@ export default function PostItem({ post }: { post: Post }) {
         </div>
 
         {/* Title */}
-        <h1 className="text-[21px] font-medium mb-2 group-hover:text-main">
+        <h1 className="text-[21px] font-main font-[500] mb-2 group-hover:text-[main]">
           {title}
         </h1>
 
         {/* Description */}
-        <p className="text-gray-400 text-sm mb-2">{description}</p>
+        <p className="text-gray-400 text-sm mb-2 font-main line-clamp-2">
+          {description}
+        </p>
 
         {/* Date */}
-        <p className="text-gray-400 text-sm">
+        <p className="text-gray-400 text-sm font-main">
           {`${year}.${month.length >= 2 ? month : `0${month}`}.${dates.length >= 2 ? dates : `0${dates}`}`}
         </p>
       </div>

@@ -8,9 +8,9 @@ const config: Config = {
       colors: {
         main: '#0000e7',
       },
-      // fontFamily: {
-      //   main: ['var(--mainfont)'],
-      // },
+      fontFamily: {
+        main: ['var(--font-main)'],
+      },
     },
   },
   plugins: [],

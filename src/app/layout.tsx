@@ -4,11 +4,9 @@ import localFont from 'next/font/local';
 
 const mainFont = localFont({
   src: '../fonts/PretendardVariable.woff2',
-  style: 'normal',
-  variable: '--mainfont',
-  display: 'swap',
-  preload: true,
+  variable: '--font-main',
   fallback: ['sans-serif'],
+  weight: '45 920',
 });
 
 /**
@@ -25,7 +23,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }): React.ReactNode {
   return (
-    <html lang="en" className={mainFont.className}>
+    <html lang="en" className={mainFont.variable}>
       <body>{children}</body>
     </html>
   );

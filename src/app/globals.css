@@ -16,6 +16,10 @@ body {
   --codeBlockOutlineColor: #e1e1e1;
 }
 
+.mainfontwdth {
+  font-variation-settings: 'wdth' 200;
+}
+
 * {
   box-sizing: border-box;
   padding: 0;

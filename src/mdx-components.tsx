@@ -12,22 +12,26 @@ export default function useMDXComponents(
     //   <p className="text-lg font-semibold mb-3">{children}</p>
     // ),
     h2: ({ children }) => (
-      <h2 className="text-2xl font-semibold mt-4 mb-2">{children}</h2>
+      <h2 className="text-2xl font-main font-semibold mt-10 mb-2">
+        {children}
+      </h2>
     ),
     h3: ({ children }) => (
-      <h3 className="text-xl font-semibold mt-4 mb-1">{children}</h3>
+      <h3 className="text-xl font-main font-semibold mt-8 mb-1">{children}</h3>
     ),
     h4: ({ children }) => (
-      <h4 className="text-lg font-semibold mt-4 mb-1">{children}</h4>
+      <h4 className="text-lg font-main font-semibold mt-6 mb-1">{children}</h4>
     ),
     p: ({ children }) => (
-      <p className="text-base leading-7 mb-4 text-gray-700">{children}</p>
+      <p className="text-base font-main leading-7 mb-4 text-gray-700">
+        {children}
+      </p>
     ),
     a: ({ children, href }) => (
       <a
         href={href}
         className="text-blue-600 underline hover:no-underline"
-        target="_blank"
+        target={href?.startsWith('#') ? '_self' : '_blank'}
         rel="noopener noreferrer"
       >
         {children}
@@ -44,6 +48,27 @@ export default function useMDXComponents(
       </pre>
     ),
     strong: ({ children }) => <i className="font-semibold">{children}</i>,
+    blockquote: ({ children }) => (
+      <blockquote
+        className="
+        my-6
+        pl-6
+        border-l-4
+        border-gray-200
+        text-gray-600
+        font-main
+        text-lg
+        italic
+        [&>p]:leading-relaxed
+        [&>p]:py-1
+        [&>p]:m-0
+        [&>p]:!text-inherit
+        [&>p]:!font-inherit
+      "
+      >
+        {children}
+      </blockquote>
+    ),
     ...components,
   };
 }

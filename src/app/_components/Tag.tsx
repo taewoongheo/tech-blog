@@ -6,12 +6,13 @@ export default function Tag({ tag }: { tag: Categories }) {
     <span
       className="
       inline-block
-      mr-3
+      mr-1
       font-sans
       text-sm
       text-main
       cursor-pointer
-      font-bold
+      font-main
+      font-[500]
     "
     >
       #{tag}
