@@ -1,4 +1,5 @@
 import React from 'react';
+import Navbar from '@/app/_components/Navbar';
 
 export default function MdxLayout({
   children,
@@ -6,8 +7,11 @@ export default function MdxLayout({
   children: React.ReactNode;
 }): React.ReactNode {
   return (
-    <div className="flex flex-col mt-10 sm:mt-md mb-10 px-all sm:px-sm md:px-md lg:px-lg xl:px-xl">
-      {children}
-    </div>
+    <>
+      <Navbar />
+      <div className="flex flex-col justify-center content-center p-4 w-full sm:max-w-[700px] lg:max-w-[770px] mx-auto">
+        {children}
+      </div>
+    </>
   );
 }

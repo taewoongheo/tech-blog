@@ -6,9 +6,11 @@ import { compile, run } from '@mdx-js/mdx';
 import * as runtime from 'react/jsx-runtime';
 import { Metadata } from 'next';
 import rehypePrettyCode, { Options } from 'rehype-pretty-code';
+import Image from 'next/image';
 import { getAllPostPaths, getPostPath } from '@/app/_utils/get-post-path';
-import { useMDXComponents } from '@/mdx-components';
 import Giscus from './giscus';
+import useMDXComponents from '@/mdx-components';
+import Tag from '@/app/_components/Tag';
 
 type params = { slug: string };
 
@@ -88,8 +90,7 @@ export default async function Post({
   const data = await pfs.readFile(postPath, 'utf-8');
   const mdxSource = matter(data);
   const mdxMeta = mdxSource.data;
-  const { title } = mdxMeta;
-  // const thumnail = mdx
+  const { title, thumbnail, description, tags, date } = mdxMeta;
   const mdxContent = mdxSource.content;
 
   const code = String(
@@ -106,8 +107,25 @@ export default async function Post({
 
   return (
     <>
-      <div className="mb-5">
-        <h1 className="text-5xl font-semibold">{title}</h1>
+      <div className="flex flex-col items-center justify-center mb-5 mt-4 lg:mt-10">
+        <div className="flex flex-col w-full items-start">
+          {tags.map((tag, i) => (
+            <Tag key={(tag + i).toString()} tag={tag} />
+          ))}
+          <h1 className="text-4xl lg:text-5xl font-medium leading-[2.8rem] lg:leading-[4rem]">
+            {title}
+          </h1>
+          <p className="text-[#969696]">{description}</p>
+          <p className="text-[#969696]">{date}</p>
+        </div>
+        <div className="relative w-full max-w-[600px] aspect-[600/380] mx-4 my-10">
+          <Image
+            src={thumbnail}
+            alt=""
+            fill
+            style={{ objectFit: 'cover', borderRadius: '8px' }}
+          />
+        </div>
       </div>
       <MDXContent components={components} />
       <Giscus />

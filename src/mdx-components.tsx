@@ -8,9 +8,9 @@ export default function useMDXComponents(
   components: MDXComponents,
 ): MDXComponents {
   return {
-    h1: ({ children }) => (
-      <h1 className="text-3xl font-semibold mb-3">{children}</h1>
-    ),
+    // h1: ({ children }) => (
+    //   <p className="text-lg font-semibold mb-3">{children}</p>
+    // ),
     h2: ({ children }) => (
       <h2 className="text-2xl font-semibold mt-4 mb-2">{children}</h2>
     ),
@@ -43,7 +43,7 @@ export default function useMDXComponents(
         {children}
       </pre>
     ),
-    em: ({ children }) => <span className="text-FCmain">{children}</span>,
+    strong: ({ children }) => <i className="font-semibold">{children}</i>,
     ...components,
   };
 }

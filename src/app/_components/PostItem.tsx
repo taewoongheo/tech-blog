@@ -1,10 +1,10 @@
 import React from 'react';
+import Image from 'next/image';
 import { Post } from '../Types/Post';
 import Tag from './Tag';
 
 export default function PostItem({ post }: { post: Post }): React.ReactNode {
-  // {thumnail} = post
-  const { title, tags, date, description } = post;
+  const { title, tags, date, description, thumbnail } = post;
   const year = date.slice(0, 4);
   const month = date.slice(5, 7);
   const dates = date.slice(8, 9);
@@ -27,8 +27,14 @@ export default function PostItem({ post }: { post: Post }): React.ReactNode {
         </div>
       </div>
       <div className="flex justify-center items-start pr-1">
-        <div className="outline w-20 h-20 sm:w-24 sm:h-24 rounded-sm">
-          no image
+        <div className="relative w-full max-w-[600px] aspect-[600/380] mx-4 my-10">
+          {/* 이미지 흑백화 */}
+          <Image
+            src={thumbnail}
+            alt=""
+            fill
+            style={{ objectFit: 'cover', borderRadius: '8px' }}
+          />
         </div>
       </div>
     </div>

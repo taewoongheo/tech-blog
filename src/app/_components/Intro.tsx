@@ -30,7 +30,7 @@ export default function Intro(): React.ReactNode {
         </p>
       </div>
 
-      <div className="flex-1 hidden lg:flex h-full min-w-[300px]">
+      <div className="flex-1 hidden lg:flex min-h-[470px] min-w-[300px]">
         <div className="flex pt-[10rem]">
           <HeadphoneAscii />
         </div>

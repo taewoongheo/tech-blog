@@ -1,8 +1,8 @@
 import React from 'react';
 import PostList from './_components/PostList';
-import { getAllPostFrontMatter } from './_utils/get-post';
 import Intro from './_components/Intro';
 import Navbar from './_components/Navbar';
+import getAllPostFrontMatter from './_utils/get-post';
 
 /**
  * html tag 로 seo 보완
@@ -10,7 +10,7 @@ import Navbar from './_components/Navbar';
 export default async function Main(): Promise<React.ReactElement> {
   const posts = await getAllPostFrontMatter();
   return (
-    <div className="w-full h-full flex flex-col items-center">
+    <div className="w-full flex flex-col items-center mb-[5rem]">
       <Navbar />
       <Intro />
       <PostList posts={posts} />
