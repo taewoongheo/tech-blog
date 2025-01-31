@@ -21,7 +21,7 @@ export default function PostItem({ post }: { post: Post }) {
         </div>
 
         {/* Title */}
-        <h1 className="text-[21px] font-main font-[500] mb-2 group-hover:text-[main]">
+        <h1 className="text-[21px] font-main font-[500] mb-2 group-hover:text-main">
           {title}
         </h1>
 

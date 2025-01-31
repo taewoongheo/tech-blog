@@ -1,0 +1,215 @@
+---
+slug: objectObject
+title: '[object Object]의 정체가 뭘까? 바닥까지 파헤쳐보기'
+tags: ['javascript']
+date: '2025-01-28'
+description: '[object Object]가 출력되는 원리를 프로토타입의 동작 방식과 함께 설명하고, Symbol.toStringTag를 활용하여 이를 직접 커스터마이징하는 방법을 다루었다.'
+thumbnail: 'https://i.imgur.com/aU7ORS6.jpeg'
+---
+
+한창 자바스크립트 복습을 하던 중 **_\[object Object]_** 를 만났다. 개인적으로 이번 복습을 통해 자바스크립트를 구석구석 살펴보고 싶었기 때문에 정체를 알아보기로 했다. 이번 글에서는 **_\[object Object]_** 가 무엇인지 알아보고, 이를 이해하기 위한 프로토타입의 동작 원리, 마지막으로 **_\[object Object]_** 를 직접 바꾸고 활용하는 내용을 다뤘다.
+
+## **_\[object Object]_**
+
+```js
+const obj = { x: 1 };
+
+console.log(obj); // { 'x' : 1 }
+console.log(obj + ''); // [object Object]
+```
+
+위 코드에서 **_obj_** 를 출력했을 때는 객체의 내용을 그대로 보여준다. 하지만 문자열 `''`를 더한 경우 **_\[object Object]_** 로 출력된다. 이는 객체가 암묵적으로 문자열 타입 변환이 된 결과다.
+
+그렇다면 객체가 문자열로 변환될 때 내부적으로 어떤 일이 일어날까? 자바스크립트에서 객체가 문자열로 변환될 땐 기본적으로 객체의 **_toString_** 메서드가 호출된다. **_toString_** 메서드는 객체를 `[object 타입]` 형식으로 반환하기 때문에 **_\[object Object]_** 라는 결과가 나온 것이다.
+
+만약 객체를 그대로 문자열로 출력하고 싶다면, `JSON.stringify` 를 사용할 수 있다. 객체를 JSON 문자열로 객체 그대로 반환한다.
+
+```js
+console.log(JSON.stringify(obj)); // { 'x' : 1 }
+```
+
+왜 **_\[object Object]_** 가 나오는지는 알았다. 하지만 한 가지 의문이 생겼다.
+
+**_toString_** 메서드는 어디서 온 것일까?
+
+## toString 은 어디서 왔을까?
+
+사실 **_toString_** 은 나에게 꽤 친숙한 메서드다. 아마 여러분들도 Java와 같은 객체지향 언어를 공부했다면 익숙할 것이다.
+
+```java
+class Obj {}
+
+Obj obj = new Obj();
+System.out.println(obj.toString());
+```
+
+Java에서 **_toString_** 은 하위 클래스가 직접 구현하지 않아도 사용할 수 있는 메서드다. 이는 객체지향 프로그래밍 언어의 특징으로, 모든 클래스가 상위 클래스인 **_Object_** 로부터 **_toString_** 메서드를 상속받기 때문이다. 즉, 직접 정의하지 않고 사용하는 것이다.
+
+자바스크립트에서도 동일하다. 자바스크립트의 객체는 프로토타입 객체를 통해 상위 객체의 속성과 메서드를 상속받는다. 따라서 객체를 생성할 때, 그 객체는 기본적으로 `Object.prototype` 에 정의된 **_toString_** 메서드를 상속받는다. 이를 통해 **_toString_** 을 직접 정의하지 않아도 사용할 수 있다.
+
+## 모든 객체는 Object 에서 시작된다.
+
+자바스크립트가 지원하는 타입은 7개의 원시 타입과 object 타입까지 더해 총 8개다.
+
+- **_Boolean_**
+- **_Number_**
+- **_String_**
+- **_Symbol_**
+- **_BigInt_**
+- **_Undefined_**
+- **_Null_**
+
+**_null, undefined_** 를 제외한 나머지 타입들은 래퍼객체를 갖고 있다. 중요한 것은, 해당 래퍼객체들이 모두 **_Object_** 의 인스턴스라는 것이다. 이는 곧, 원시 값들이 일시적으로 래퍼객체로 변환될 때, **_Object_** 의 프로퍼티에 접근할 수 있다는 말이 된다.
+
+```js
+Boolean instanceof Object; //true
+Number instanceof Object; //true
+String instanceof Object; //true
+Symbol instanceof Object; //true
+BigInt instanceof Object; //true
+undefined instanceof Object; //false
+null instanceof Object; //false
+```
+
+그렇다면 구체적으로 어떤 과정을 통해 연결될까?
+
+## prototype
+
+대부분의 객체는 **_\[\[Prototype]]_** 내부 슬롯을 가지며, 이는 프로토타입 객체의 참조를 가리킨다. 하위 객체는 프로토타입 객체에 접근하여 상위 객체의 메서드를 사용할 수 있다.
+
+쉽게 말해, 프로토타입 객체는 상위 객체가 하위 객체에게 공유할 프로퍼티를 저장한 객체라고 보면 된다. 이때 상위 객체의 프로토타입 객체와 하위 객체를 연결하고 있는 것이 바로 **_prototype chain_** 이다.
+
+프로토타입 체인의 끝은 `Object.prototype` 이다. 하위 객체에서 이를 접근하기 위해 `__proto__` 접근자 프로퍼티를 사용할 수 있다.
+
+> ES6 이후, `__proto__` 대신, `Object.getPrototypeOf` 를 사용하는 것을 권장한다.
+
+위에서 보았던 래퍼 객체들 뿐만 아니라, 빌트인 객체 또한 모두 **_Object_** 의 인스턴스이다. 프로토타입을 통해 **_Object_** 와 연결되어 있다.
+
+```js
+Function.prototype.__proto__ === Object.prototype; // true
+Array.prototype.__proto__ === Object.prototype;   // true
+RegExp.prototype.__proto__ === Object.prototype; // true
+Promise.prototype.__proto__ === Object.prototype;  // true
+...
+```
+
+**_\[\[Prototype]]_** 이 참조하는 프로토타입 객체는, 해당 객체가 생성된 방식에 의해 결정된다.
+
+- 객체 리터럴의 경우, 프로토타입은 `Object.prototype` 이다.
+- 생성자함수로 생성된 인스턴스의 프로토타입은 `생성자함수.prototype` 이다.
+- `Object.create()` 메서드로 생성된 경우, 프로토타입은 `null` 이다.
+
+따라서 `{}` 의 경우, 프로토타입은 `Object.prototype` 이다.
+
+```js
+{}.__proto__ === Object.prototype; //true
+```
+
+좀 더 자세히 보면, 객체가 생성될 때 내부적으로 **_OrdinaryObjectCreate_** 메서드가 실행된다.
+
+**_OrdinaryObjectCreate_** 메서드는 객체 생성 시 기본적으로 호출되는 연산이다. 객체의 **_\[\[Prototype]]_** 을 설정하고, 객체 내부 속성들을 초기화하는 작업을 수행한다.
+
+객체 생성 방식마다 **_OrdinaryObjectCreate_** 의 동작과정이 모두 다르다.
+
+알아야 할 것은, 객체 리터럴로 생성 시 `OrdinaryObjectCreate(Object.prototype)` 이 실행된다는 것이다. 따라서 객체 리터럴에 의해 생성되는 객체의 프로토타입은 `Object.prototype` 인 것이다.
+
+### prototype chain
+
+프로로타입 객체는 프로토타입 체인으로 연결된다.
+![](https://i.imgur.com/eL5pifU.png)
+
+프로토타입 객체 내부에 **_toString_** 을 볼 수 있다.
+
+**_toString_** 을 호출 시 프로토타입 체인으로 연결되는 과정을 자세히 보면,
+
+- 현재 메서드를 호출한 객체의 스코프 내에 **_toString_** 이 있는 지 확인한다.
+- 만약 없다면, 프로토타입 체인을 따라 **_\[\[Prototype]]_** 로 이동한다. 그리고 해당 스코프 내에 **_toString_** 이 있는지 확인한다.
+- 이 과정을 찾을 때까지 반복한다.
+- 프로토타입 체인의 종점인 `Object.prototype` 에 **_toString_** 이 정의되어 있다. 이것을 실행한다.
+
+오버라이딩이 가능한 것도 이러한 원리다.
+
+```js
+const obj = {
+  toString() {
+    return 'my obj';
+  },
+};
+
+console.log(obj + ''); // "my obj"
+```
+
+## Object.prototype.toString()
+
+지금까지 내용을 간단하게 정리하면,
+
+- **_\[object Object]_** 는 객체가 문자열로 평가된 결과다.
+- 객체가 문자열로 평가될 때, **_toString_** 이 실행된다.
+- **_toString_** 은 **_Object_** 로부터 받아 실행된다. 그리고 이것은 프로토타입으로 연결되어 있다.
+
+결국, 실행되는 것은 `Object.prototype.toString()` 이다. 이 메서드에 대해 좀 더 자세히 알아보자.
+
+![](https://i.imgur.com/oL6Pa0T.png)
+
+`Object.prototype.toString()` 는 호출된 객체(`this` 값)가 어떤 클래스 타입인지 문자열 형식으로 알려주는 기능을 한다. **_\[object Object]_** 에서 두 번째 값이 클래스 타입이다.
+
+문서를 읽어보면 여러 클래스 타입에 대해 미리 정의된 것을 확인할 수 있다. 이러한 타입은 `builtinTag` 에 저장되어 있다. 해당 클래스 타입의 **_toString_** 을 호출할 때마다 위의 정의된 값들이 출력된다.
+
+참고로, `Object.prototype.toString()`을 직접 사용 시 this 값을 명시적으로 바인딩해줘야 한다. 함수가 정의된 위치를 기준으로 this는 전역객체가 되기 때문이다. 따라서 `call` 를 이용하자. this 를 인자값으로 참조할 수 있도록 말이다.
+
+```js
+Object.prototype.toString(true); // '[object Object]'
+Object.prototype.toString.call(true); // '[object Boolean]'
+```
+
+나머지 타입들도 마찬가지다.
+
+```js
+Object.prototype.toString.call(''); // [object String]
+Object.prototype.toString.call(1); // [object Number]
+Object.prototype.toString.call(true); // [object Boolean]
+Object.prototype.toString.call(Symbol('symbol')); // [object Symbol]
+Object.prototype.toString.call(BigInt(1e10)); // [object BigInt]
+Object.prototype.toString.call([]); // [object Array]
+Object.prototype.toString.call({}); // [object Object]
+Object.prototype.toString.call(null); // '[object Null]'
+Object.prototype.toString.call(undefined); // '[object Undefined]'
+```
+
+## \[Symbol.toStringTag]
+
+문서의 16번 항목에 `Symbol.toStringTag` 이 언급되었다. 실제로 이 심볼 값을 변경하여 클래스 타입을 변경할 수 있다.
+
+```js
+const myObj = {
+  [Symbol.toStringTag]: 'myObj',
+};
+
+Object.prototype.toString.call(myObj); // [object myObj]
+```
+
+이 동작은 프로토타입 객체 내에서 정의된 `[Symbol.toStringTag]` 를 오버라이드했기 때문에 가능하다.
+
+실제로 이러한 활용 사례 중 하나는 `Chromium`의 `src/math.js`에서 찾아볼 수 있다
+
+![](https://i.imgur.com/pUuWzsT.png)
+
+`SetUpMath` 함수를 보면 `symbolToStringTag`에 "Math" 문자열을 넣은 것을 볼 수 있다. 이를 통해 `Math` 객체의 클래스 타입이 **_\[object Math]_** 로 정의된다.
+
+```js
+Object.prototype.toString.call(Math); // [object Math]
+```
+
+## 결론
+
+우연히 마주친 **_\[object Object]_** 를 파고들면서 자바스크립트의 핵심 동작 원리를 깊이 이해할 수 있었다. 객체지향 프로그래밍에서 자주 사용되는 상속과 오버라이딩, this 바인딩, 그리고 프로토타입 체인의 개념을 실질적으로 살펴볼 기회가 되었다. 특히, `Symbol.toStringTag` 를 활용해 객체의 동작을 세밀하게 제어할 수 있다는 점이 흥미로웠다.
+
+공부를 하면서 개인적으로 이를 어떻게 활용할 수 있을지 고민했는데, Chromium의 Math 라이브러리에서의 사용 사례를 통해 보았듯이, 라이브러리나 클래스를 설계할 때 `Symbol.toStringTag` 를 사용해 디버깅 편의성을 높이거나 객체의 식별성을 향상시킬 수 있겠다고 생각했다.
+
+#### 참고
+
+- [Chromium-math.js](https://chromium.googlesource.com/v8/v8/+/4.3.21/src/math.js?autodive=0//)
+- [ECMAScript® 2025 Language Specification](https://tc39.es/ecma262/multipage/fundamental-objects.html#sec-object.prototype.tostring)
+- [자바스크립트에서 [object Object] 가 대체 뭘까?](https://medium.com/%EC%98%A4%EB%8A%98%EC%9D%98-%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D/%EC%9E%90%EB%B0%94%EC%8A%A4%ED%81%AC%EB%A6%BD%ED%8A%B8%EC%97%90%EC%84%9C-object-object-%EA%B0%80-%EB%8C%80%EC%B2%B4-%EB%AD%98%EA%B9%8C-fe55b754e709)
+- [JavaScript data types and data structures](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures)
+- [Symbol.toStringTag](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/toStringTag)
