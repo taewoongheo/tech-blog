@@ -25,9 +25,6 @@ const options: Options = {
   },
 };
 
-/**
- * build 시점에 실행할 slug 반환
- */
 export async function generateStaticParams(): Promise<params[]> {
   const paths = await getAllPostPaths();
   const slugs = await Promise.all(
@@ -38,11 +35,6 @@ export async function generateStaticParams(): Promise<params[]> {
   return slugs;
 }
 
-/**
- * build 시점에 메타데이터 생성
- *
- * TODO: metadataBase 설정: OG, Canonical URL
- */
 export async function generateMetadata({
   params,
 }: {
@@ -58,16 +50,28 @@ export async function generateMetadata({
   const metadata = matter(data).data;
 
   return {
-    generator: 'Next.js',
-    applicationName: 'TaewoongHeo Tech Blog',
-    referrer: 'origin-when-cross-origin',
     title: metadata.title,
     description: metadata.description,
     keywords: metadata.tags,
-    formatDetection: {
-      email: false,
-      address: false,
-      telephone: false,
+
+    alternates: {
+      canonical: `/posts/${slug}`,
+    },
+
+    openGraph: {
+      title: metadata.title,
+      description: metadata.description,
+      url: `https://taewoongheo.github.io/tech-blog/posts/${slug}`,
+      images: [
+        {
+          url: metadata.thumbnail || 'https://i.imgur.com/PTFCYiY.jpeg',
+          width: 1200,
+          height: 630,
+        },
+      ],
+      publishedTime: metadata.date,
+      modifiedTime: metadata.updateDate,
+      tags: metadata.tags,
     },
   };
 }
