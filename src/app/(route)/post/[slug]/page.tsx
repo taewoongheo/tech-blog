@@ -11,7 +11,7 @@ import { getAllPostPaths, getPostPath } from '@/app/_utils/get-post-path';
 import Giscus from './giscus';
 import useMDXComponents from '@/mdx-components';
 import Tag from '@/app/_components/Tag';
-import { Categories } from '@/app/Types/Category';
+import { Categories } from '@/app/_types/Category';
 
 type params = { slug: string };
 

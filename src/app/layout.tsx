@@ -48,6 +48,9 @@ export const metadata = {
       'max-snippet': -1,
     },
   },
+  verification: {
+    google: 'fpHIZwUl25zQL72Z8DsFHC2G97GmToki09OquVoMkyE',
+  },
   creator: '허태웅',
   publisher: '허태웅',
 };

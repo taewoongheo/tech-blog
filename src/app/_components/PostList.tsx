@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { Post } from '../Types/Post';
+import { Post } from '../_types/Post';
 import PostItem from './PostItem';
 
 export default function PostList({

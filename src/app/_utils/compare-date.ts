@@ -1,4 +1,4 @@
-import { Post } from '../Types/Post';
+import { Post } from '../_types/Post';
 
 /**
  * 최근 게시물 내림차순 비교

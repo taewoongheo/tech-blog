@@ -1,6 +1,6 @@
 import matter from 'gray-matter';
 import { promises as fs } from 'fs';
-import { Post } from '../Types/Post';
+import { Post } from '../_types/Post';
 import { getAllPostPaths } from './get-post-path';
 import compareDate from './compare-date';
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Categories } from '../Types/Category';
+import { Categories } from '../_types/Category';
 
 export default function Tag({ tag }: { tag: Categories }) {
   return (

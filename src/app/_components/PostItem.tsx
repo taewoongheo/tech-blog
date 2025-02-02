@@ -1,6 +1,6 @@
 import React from 'react';
 import Image from 'next/image';
-import { Post } from '../Types/Post';
+import { Post } from '../_types/Post';
 import Tag from './Tag';
 
 export default function PostItem({ post }: { post: Post }) {

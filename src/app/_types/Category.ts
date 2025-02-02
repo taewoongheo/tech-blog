@@ -1,4 +1,5 @@
 export const categories = [
+  'Story',
   'JavaScript',
   'React',
   'TypeScript',
