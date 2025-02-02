@@ -10,11 +10,11 @@ const nextConfig = {
   basePath: idProd ? '/tech-blog' : '',
   images: {
     unoptimized: true,
-    localPatterns: [
-      {
-        pathname: '/public/images/',
-      },
-    ],
+    // localPatterns: [
+    //   {
+    //     pathname: '/public/images/',
+    //   },
+    // ],
   },
   pageExtensions: ['js', 'jsx', 'md', 'mdx', 'ts', 'tsx'],
 };
