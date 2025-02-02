@@ -2,12 +2,11 @@ import React from 'react';
 import Image from 'next/image';
 import { Post } from '../_types/Post';
 import Tag from './Tag';
+import { formatRowDateForDisplay } from '../_utils/date-utils';
 
 export default function PostItem({ post }: { post: Post }) {
   const { title, tags, date, description, thumbnail } = post;
-  const year = date.slice(0, 4);
-  const month = date.slice(5, 7);
-  const dates = date.slice(8, 9);
+  const [year, month, dates] = formatRowDateForDisplay(date);
 
   return (
     <div className="flex justify-between items-center hover:cursor-pointer group gap-4">

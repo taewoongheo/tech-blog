@@ -2,7 +2,7 @@ import matter from 'gray-matter';
 import { promises as fs } from 'fs';
 import { Post } from '../_types/Post';
 import { getAllPostPaths } from './get-post-path';
-import compareDate from './compare-date';
+import { compareDate } from './date-utils';
 
 /**
  * post 의 frontmatter 를 파싱하여 Post[] 반환

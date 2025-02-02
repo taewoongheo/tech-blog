@@ -12,6 +12,7 @@ import Giscus from './giscus';
 import useMDXComponents from '@/mdx-components';
 import Tag from '@/app/_components/Tag';
 import { Categories } from '@/app/_types/Category';
+import { formatRowDateForDisplay } from '@/app/_utils/date-utils';
 
 type params = { slug: string };
 
@@ -98,6 +99,8 @@ export default async function Post({
   const { title, thumbnail, description, tags, date } = mdxMeta;
   const mdxContent = mdxSource.content;
 
+  const [year, month, dates] = formatRowDateForDisplay(date);
+
   const code = String(
     await compile(mdxContent, {
       outputFormat: 'function-body',
@@ -129,7 +132,10 @@ export default async function Post({
           {/* Description and Date */}
           <div className="space-y-2">
             <p className="font-main text-[#969696]">{description}</p>
-            <p className="font-main text-[#969696]">{date}</p>
+            <p className="font-main text-[#969696]">
+              {' '}
+              {`${year}.${month.length >= 2 ? month : `0${month}`}.${dates.length >= 2 ? dates : `0${dates}`}`}
+            </p>
           </div>
         </div>
 
