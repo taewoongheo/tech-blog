@@ -30,7 +30,7 @@ export default function useMDXComponents(
     a: ({ children, href }) => (
       <a
         href={href}
-        className="text-blue-600 underline hover:no-underline"
+        className="font-main text-blue-600 underline hover:no-underline"
         target={href?.startsWith('#') ? '_self' : '_blank'}
         rel="noopener noreferrer"
       >
@@ -38,16 +38,22 @@ export default function useMDXComponents(
       </a>
     ),
     ul: ({ children }) => (
-      <ul className="list-disc pl-8 my-5 text-gray-700">{children}</ul>
+      <ul className="font-main list-disc pl-8 my-5 text-gray-700">
+        {children}
+      </ul>
     ),
-    li: ({ children }) => <li className="mb-3 leading-7">{children}</li>,
+    li: ({ children }) => (
+      <li className="font-main mb-3 leading-7">{children}</li>
+    ),
     // rehype-pretty-code 가 생성하는 class 를 덮어씌움
     pre: ({ children }) => (
       <pre tabIndex={-1} className="mb-3">
         {children}
       </pre>
     ),
-    strong: ({ children }) => <i className="font-semibold">{children}</i>,
+    strong: ({ children }) => (
+      <i className="font-main font-semibold">{children}</i>
+    ),
     blockquote: ({ children }) => (
       <blockquote
         className="

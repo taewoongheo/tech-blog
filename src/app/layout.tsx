@@ -17,18 +17,19 @@ export const metadata = {
   authors: [{ name: '허태웅', url: 'https://github.com/taewoongheo' }],
   category: 'Technology',
   description:
-    '프론트엔드 개발자의 기술 블로그입니다. React, JavaScript, Next.js를 중심으로 문제 해결 과정에서의 깊은 고민과 기술적 통찰을 쉽게 설명하며, 단순한 기술 나열이 아닌 문제 정의부터 해결까지의 전체적인 과정과 근거를 담은 개발 이야기를 전합니다.',
+    '프로젝트를 진행하면서 배우고 고민한 것들을 대해 기록하는 블로그입니다. 기술에 종속되지 않고 문제해결을 중심으로 기록해요. 몰입을 중요하게 생각합니다.',
   alternates: {
     canonical: '/',
   },
   openGraph: {
     title: '허태웅 기술 블로그',
-    description: '배우고 고민한 흔적들을 공유하는 블로그입니다.',
+    description:
+      '프로젝트를 진행하면서 배우고 고민한 것들을 대해 기록합니다. 기술에 종속되지 않고 문제해결을 중심으로 기록해요.',
     url: 'https://taewoongheo.github.io/tech-blog/',
     siteName: 'Next.js',
     images: [
       {
-        url: 'https://i.imgur.com/PTFCYiY.jpeg',
+        url: 'https://github.com/user-attachments/assets/676cc999-5942-4441-b227-6af2b6f3fd91',
         width: 1200,
         height: 630,
       },

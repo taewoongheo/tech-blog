@@ -8,7 +8,8 @@ export default function Tag({ tag }: { tag: Categories }) {
       inline-block
       mr-1
       font-sans
-      text-md
+      text-sm
+      lg:text-base
       text-main
       font-main
       font-[500]
