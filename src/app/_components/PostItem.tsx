@@ -10,7 +10,7 @@ export default function PostItem({ post }: { post: Post }) {
 
   return (
     <article>
-      <div className="flex justify-between items-center hover:cursor-pointer group gap-4">
+      <div className="flex justify-between items-center hover:cursor-pointer group gap-4 mb-10">
         {/* Content Section */}
         <div className="flex-1">
           {/* Tags */}
@@ -26,12 +26,12 @@ export default function PostItem({ post }: { post: Post }) {
           </h1>
 
           {/* Description */}
-          <p className="text-gray-400 text-sm mb-2 font-main line-clamp-2">
+          <p className="text-gray-400 text-sm lg:text-[15px] mb-2 font-main line-clamp-2">
             {description}
           </p>
 
           {/* Date */}
-          <p className="text-gray-400 text-sm font-main">
+          <p className="text-gray-400 text-sm lg:text-[15px] font-main">
             {`${year}.${month.length >= 2 ? month : `0${month}`}.${dates.length >= 2 ? dates : `0${dates}`}`}
           </p>
         </div>

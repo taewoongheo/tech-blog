@@ -9,7 +9,7 @@ export default function Tag({ tag }: { tag: Categories }) {
       mr-1
       font-sans
       text-sm
-      lg:text-base
+      lg:text-[15px]
       text-main
       font-main
       font-[500]
