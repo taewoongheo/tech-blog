@@ -1,0 +1,506 @@
+---
+slug: makeHookWithClosure
+title: 'React Hook 들을 구현하며 클로저와 친해지기 (useState, useEffect, useRef)'
+tags: ['Javascript', 'React']
+date: '2025-02-16'
+description: 'useState, useEffect, useRef 를 직접 구현해보며, 클로저를 통한 상태관리와 은닉화의 원리, 공유 상태 문제와 stale closure 까지 심도있게 다룬다.'
+thumbnail: 'https://github.com/user-attachments/assets/2b244c14-b45a-4693-9aa1-df6b412957df'
+---
+
+자바스크립트를 처음 공부하면서 제일 생소했던 개념이 클로저다.
+
+> A closure is the combination of a function and the lexical environment within which that function was declared.
+
+음...일단 정의부터 거리감이 느껴진다. 하지만 막상 살펴보면 클로저는 크게 어려운 개념이 아니다.
+
+**_내부함수가 외부함수의 지역변수를 참조할 시, 이미 생명주기가 끝난 외부함수의 지역변수를 내부함수를 통해 참조할 수 있다. 이때 이 내부함수를 클로저라고 한다._**
+
+인터넷에는 쉬운 설명들과 좋은 코드 예시들이 많다. 그것들을 보면 이해는 어렵지 않다. 하지만 적용해보라고 하면? 그땐 얘기가 다르다. 개념상으론 이해가 가지만 적용하라고 하면 여전히 어려움을 느꼈다. 마치 클로저라는 친구는 알지만 아직 많이 어색한 느낌이다.
+
+그래서 직접 사용해보려고 한다. 모든 기술들은 문제들을 해결하기 위해 등장했고, 이것은 클로저도 마찬가지다. 따라서 클로저가 해결하는 문제의 사례들을 직접 구현해보면서 클로저와 친해져 볼 것이다.
+
+그리고 직접 구현해볼 예시는 react hook 으로 결정했다.
+
+react hook 은 프론트엔드 개발자라면 누구나 자주 사용하는 개념이면서, 특히 함수형 프로그래밍의 관점에서 상태 관리와 부수 효과를 우아하게 다루는 방법을 보여준다. 이때 클로저는 이러한 hook 의 동작 원리를 이해하는 데 핵심이 되는 개념이다. 그래서 이번 글은 **_useState_**, **_useEffect_**, **_useRef_** 같은 기본적인 훅들을 직접 구현해보면서 클로저가 실제로 어떻게 활용되는지 자세하게 살펴볼 것이다.
+
+클로저에 대한 기본적인 이해를 바탕으로 리액트 훅들을 직접 구현해보며, 클로저와 친해져보자.
+
+## useState
+
+먼저, 클로저는 크게 두 가지 목적으로 사용된다.
+
+- **_상태관리_**
+- **_전역변수 사용 억제를 통한 은닉화_**
+
+그리고 이것을 모두 활용하고 있는 좋은 예시가 **_useState_** 다. **_useState_** 부터 구현해보자.
+
+일단 나이브하게 구현했다.
+
+```js
+function useState(initialValue) {
+  let _state = initialValue;
+
+  function setState(newValue) {
+    _state = newValue;
+  }
+
+  return [_state, setState];
+}
+
+const [state, setState] = useState('initial value');
+console.log(state); // initial value
+setState('new state');
+console.log(state); // initial value
+```
+
+여기서 `setState` 는 **_\_state_** 를 참조하는 클로저다. **_useState("initial value")_** 가 실행되면서 **_useState_** 의 생명주기는 끝난다. 하지만 `setState` 클로저를 통해 내부 지역변수 **_\_state_** 에 접근할 수 있다. 이렇게 은닉화를 구현한다.
+
+근데 뭔가 결과가 이상하다. 분명 **_"new state"_** 로 상태를 바꿨는데 그 결과가 반영되지 않아 상태관리가 안되고 있다.
+
+왜 그럴까? 이유는 간단하다.
+
+`setState` 로 **_\_state_** 를 정상적으로 바꿨지만, 그걸 반환하지 않고 있기 때문이다. 두 번째 출력의 **_state_** 는 **_useState("initial value")_** 에서 반환된 것이다. 그럼 답은 간단하다. 값을 직접 반환하면 된다.
+
+```js
+function useState(initialValue) {
+  let _state = initialValue;
+
+  function getState() {
+    return _state;
+  }
+
+  function setState(newValue) {
+    _state = newValue;
+  }
+
+  return [getState, setState];
+}
+
+const [value, setValue] = useState('initial value');
+console.log(value()); // initial value
+setValue('new value');
+console.log(value()); // new value
+```
+
+이제 클로저에 의해 변경된 상태가 제대로 반영된다. 여기선 `getState` 는 `setState` 와 같은 렉시컬 환경의 변수를 캡처한다. 즉, 두 함수가 동일한 환경을 공유하고 있기 때문에 `setState` 로 변경된 상태를 `getState` 가 참조할 수 있는 것이다. 상태관리와 은닉화 모두 정상적으로 이루어진다.
+
+여기서 실제 **_useState_** 에 가깝도록, 상태를 가져오는 부분을 함수가 아닌 변수로 바꿔보려 한다.
+
+```js
+const React = (function () {
+  let _state;
+  return {
+    render(Component) {
+      const component = Component();
+      component.render();
+      return component;
+    },
+    useState(initialValue) {
+      _state = _state || initialValue;
+
+      function setState(value) {
+        _state = value;
+      }
+
+      return [_state, setState];
+    },
+  };
+})();
+
+function Counter() {
+  const [count, setCount] = React.useState(0);
+  return {
+    click: () => setCount(count + 1),
+    render: () => console.log('render: ', { count }),
+  };
+}
+
+let counter;
+counter = React.render(Counter); // render: { count: 0 }
+
+counter.click(); // 상태가 변경
+React.render(Counter); // render: { count: 1 }
+```
+
+이 부분을 정확히 이해해야 다음으로 넘어갈 수 있다. `React` 객체에는 상태를 의미하는 **_\_state_** 가 있다. `React` 는 즉시실행함수로써, **_render_**, **_useState_** 함수가 있는 객체를 생성 후 바로 리턴한다. 이 과정에서 반환된 **_useState_** 는 **_\_state_** 를 참조하는 클로저가 된다.
+
+실제 **_React_** 에선 **_useState_** 가 참조하는 변수가 변경될 시 자동으로 재랜더링이 이루어지지만, 글의 목적 상 구현하지 않았다. 대신 직접 **_render_** 함수를 호출하도록 했다.
+
+여기서 포인트는 다음과 같다.
+
+- **_useState_** 함수 내부에서는 `React` 객체의 **_\_state_** 를 참조한다. 즉, 클로저로 동작한다.
+- **_render_** 마다 `Counter()` 가 재실행된다. 이때 **_React.useState(0)_** 도 재실행된다. 만약 이전에 상태가 저장된 적이 있다면, **_\_state = \_state || initialValue;_** 에서 이전에 저장된 **_\_state_** 가 참조될 것이다.
+
+## 공유 상태 문제: React가 실제 훅을 관리하는 방식
+
+꽤 완성된 것 처럼 보이지만 사실 문제가 있다. 그것은 현재 상태를 하나 밖에 관리하지 못한다는 점이다. 상태를 관리하는 변수가 **_\_state_** 하나밖에 없으니 당연하다.
+
+```js
+const React = (function () {
+  let _state;
+  return {
+    render(Component) {
+      const component = Component();
+      component.render();
+      return component;
+    },
+    useState(initialValue) {
+      _state = _state || initialValue;
+
+      function setState(value) {
+        _state = value;
+      }
+
+      return [_state, setState];
+    },
+  };
+})();
+
+function Counter() {
+  const [count, setCount] = React.useState(0);
+  const [text, setText] = React.useState('initial');
+
+  return {
+    click: () => setCount(count + 1),
+    updateText: () => setText('update'),
+    render: () => console.log('counter: ', { count }, '\ntext: ', { text }),
+  };
+}
+
+let counter;
+counter = React.render(Counter);
+// counter:  { count: 0 }
+// text:  { text: 'initial' }
+
+counter.click();
+counter = React.render(Counter);
+//effect: 1
+//render:  { count: 1 }
+
+counter.updateText();
+React.render(Counter);
+// counter:  { count: 'update' }
+// text:  { text: 'update' }
+```
+
+현재 **_\_state_** 하나로 상태를 관리하고 있다. 결과를 보면 **_count, text_** 끼리 덮어쓰기 된다.
+
+이를 해결하기 위해선 각 훅들이 관리하는 상태를 별도로 저장하고 처리해야 한다. 참고로 리액트는 훅의 관리를 linkedlist 로 관리하지만, [동작은 배열과 비슷하다](https://medium.com/@ryardley/react-hooks-not-magic-just-arrays-cd4f1857236e). 클로저에 집중하기 위해선 간단한 배열로 구현해도 무방하다고 생각했다.
+
+```js
+const React = (function () {
+  // 훅들을 독립적으로 관리하기 위해 배열 사용
+  let _state = [];
+  let _stateIdx = 0;
+
+  return {
+    render(Component) {
+      // Component를 실행하면서 useState가 실행. 그래서 _stateIdx를 0으로 초기화
+      _stateIdx = 0;
+      const component = Component();
+      component.render();
+      return component;
+    },
+    useState(initialValue) {
+      // _idx에 현재 환경의 _stateIdx 캡처, useState를 _stateIdx를 참조하는 클로저로 만듦
+      // _idx를 사용했으므로 증가
+      const _idx = _stateIdx++;
+
+      _state[_idx] = _state[_idx] || initialValue;
+
+      function setState(value) {
+        _state[_idx] = value;
+      }
+
+      return [_state[_idx], setState];
+    },
+  };
+})();
+
+function Counter() {
+  const [count, setCount] = React.useState(0);
+  const [text, setText] = React.useState('initial');
+
+  return {
+    click: () => setCount(count + 1),
+    updateText: () => setText('update'),
+    render: () => console.log('counter: ', { count }, '\ntext: ', { text }),
+  };
+}
+
+let counter;
+counter = React.render(Counter);
+// counter:  { count: 0 }
+// text:  { text: 'initial' }
+
+counter.click();
+counter = React.render(Counter);
+// counter:  { count: 1 }
+// text:  { text: 'initial' }
+
+counter.click();
+counter = React.render(Counter);
+// counter:  { count: 2 }
+// text:  { text: 'initial' }
+
+counter.updateText();
+React.render(Counter);
+// counter:  { count: 2 }
+// text:  { text: 'update' }
+```
+
+상태가 훅마다 독립적으로 관리되는 것을 볼 수 있다. 여기서 포인트는 다음과 같다.
+
+- 각 훅마다 상태를 **_\_state_** 배열로 관리, 인덱스로 접근
+- 배열의 인덱스 **_\_stateIdx_** 를 클로저로 캡처, 인덱스가 증가해도 당시 환경의 **_\_stateIdx_** 는 기억하고 있기 때문에 항상 같은 인덱스에 접근 가능
+
+```js
+useState(initialValue) {
+  // _idx에 현재 환경의 _stateIdx 캡처, useState를 _stateIdx를 참조하는 클로저로 만듦
+  // _idx를 사용했으므로 증가
+  const _idx = _stateIdx++;
+
+  _state[_idx] = _state[_idx] || initialValue;
+
+  function setState(value) {
+	_state[_idx] = value;
+  }
+
+  return [_state[_idx], setState];
+},
+```
+
+핵심이 되는 코드의 동작 원리를 자세히 살펴보자. **_const \_idx = \_stateIdx++;_** 에서 현재 상태의 인덱스를 저장, 이 인덱스는 언젠가 **_setState_** 에서 다시 사용해야 한다.
+
+**_setState_** 함수가 바로 이 인덱스를 클로저로 캡처하는 것이다. **_setState_** 함수 내부에서 **_\_idx_**를 참조함으로써, **해당 상태값의 고유한 위치를 '기억' 할 수 있다.** 이렇게 클로저로 캡처된 인덱스가 있기 때문에, 나중에 같은 **_setState_** 함수를 호출하더라도 항상 올바른 상태값을 찾아 업데이트할 수 있는 것이다.
+
+만약 이 인덱스 캡처링이 없다면 **_stale closure_** 문제가 발생할 것이다. 즉, 상태를 업데이트 시, 클로저가 잘못된 인덱스를 참조하는 것이다.
+
+## Stale Closure
+
+`stale closure` 는 클로저가 잘못된 시점의 환경을 참조하는 문제를 말한다.
+
+예를 들어, 인덱스 캡처링을 제거하고 아래처럼 구현하면
+
+```js
+    useState(initialValue) {
+      _state[_stateIdx] = _state[_stateIdx] || initialValue;
+
+      function setState(value) {
+        _state[_stateIdx] = value;
+      }
+
+      return [_state[_stateIdx++], setState];
+    },
+```
+
+**_setState_** 함수가 클로저로 **_\_stateIdx_** 를 캡처하기는 하지만, 이미 증가된 이후의 인덱스를 캡처하게 된다. 결국 상태를 업데이트할 때마다 잘못된 위치의 값을 참조하게 될 것이다.
+
+지금까지 **_useState_** 를 통해 클로저의 활용법과 **_stale closure_** 문제까지 살펴보았다. 나머지 훅 **_useEffect, useRef_** 도 재미로 한번 구현해보자. 방식은 **_useState_** 와 거의 동일하니 직접 구현해보고 내 코드와 비교해봐도 좋을 것 같다.
+
+## useEffect
+
+먼저, 공유 상태 문제를 고려하지 않고 만들어봤다.
+
+```js
+const React = (function () {
+  let _state = [];
+  let _stateIdx = 0;
+
+  let _deps;
+
+  return {
+    render(Component) {
+      _stateIdx = 0;
+      const component = Component();
+      component.render();
+      return component;
+    },
+    useState(initialValue) {
+		...
+    },
+    useEffect(callback, deps) {
+      if (!_deps || _deps.some((el, idx) => el !== deps[idx])) {
+        callback();
+        _deps = deps;
+      }
+    },
+  };
+})();
+
+function Counter() {
+  const [count, setCount] = React.useState(0);
+  const [text, setText] = React.useState("initial");
+
+  React.useEffect(() => {
+    console.log("effect: " + count);
+  }, [count]);
+
+  return {
+    click: () => setCount(count + 1),
+    updateText: () => setText("update"),
+    render: () => console.log("counter: ", { count }, "\ntext: ", { text }),
+  };
+}
+
+let counter;
+counter = React.render(Counter); // 마운트 시 콜백 실행
+// effect: 0
+// counter:  { count: 0 }
+// text:  { text: 'initial' }
+
+counter = React.render(Counter); // 마운트 이후엔 실행 안됨
+// counter:  { count: 0 }
+// text:  { text: 'initial' }
+
+counter.click();
+counter = React.render(Counter); // counter(의존성배열)가 변경되었으므로 콜백 실행
+// effect: 1
+// counter:  { count: 1 }
+// text:  { text: 'initial' }
+
+counter.updateText();
+counter = React.render(Counter); // text는 의존성 배열에 포함되지 않음
+// counter:  { count: 1 }
+// text:  { text: 'update' }
+```
+
+잘 동작한다. 하지만 아직 공유 상태 문제가 남았다. 의존성 배열이 `_deps` 하나 뿐이므로, **_useEffect_** 여러 개가 사용된다면 덮어쓰기 되어 제대로 동작하지 않을 것이다. 이 부분도 **_useState_** 와 동일한 방식으로 클로저를 추가해 해결해보겠다.
+
+```js
+const React = (function () {
+  let _state = [];
+  let _stateIdx = 0;
+
+  let _deps = [];
+  let _depsIdx = 0;
+
+  return {
+    render(Component) {
+      _stateIdx = 0;
+      _depsIdx = 0; // 매 랜더링마다 0 으로 인덱스 초기화
+      const component = Component();
+      component.render();
+      return component;
+    },
+    useState(initialValue) {
+		...
+    },
+    useEffect(callback, deps) {
+      const _idx = _depsIdx++;
+
+      if (!_deps[_idx] || _deps[_idx].some((el, idx) => el !== deps[idx])) {
+        callback();
+        _deps[_idx] = deps;
+      }
+    },
+  };
+})();
+
+function Counter() {
+  const [count, setCount] = React.useState(0);
+  const [text, setText] = React.useState("initial");
+
+  React.useEffect(() => {
+    console.log("count effect: " + count);
+  }, [count]);
+
+  React.useEffect(() => {
+    console.log("text effect: " + text);
+  }, [text]);
+
+  return {
+    click: () => setCount(count + 1),
+    updateText: () => setText("update"),
+    render: () => console.log("counter: ", { count }, "\ntext: ", { text }),
+  };
+}
+
+let counter;
+counter = React.render(Counter); // 마운트 시 콜백 실행
+// count effect: 0
+// text effect: initial
+// counter:  { count: 0 }
+// text:  { text: 'initial' }
+
+counter = React.render(Counter); // 마운트 이후엔 실행 안됨
+// counter:  { count: 0 }
+// text:  { text: 'initial' }
+
+counter.click();
+counter = React.render(Counter); // counter(첫번째 useEffect의 의존성배열 요소)가 변경
+// count effect: 1
+// counter:  { count: 1 }
+// text:  { text: 'initial' }
+
+counter.updateText();
+counter = React.render(Counter); // text(두번째 useEffect의 의존성 배열 요소)가 변경
+// text effect: update
+// counter:  { count: 1 }
+// text:  { text: 'update' }
+```
+
+**_useEffect_** 내부에서 외부함수의 지역변수 **_\_depsIdx_** 를 참조하면 클로저가 되어 인덱스를 캡처링한다.
+
+여기까지 왔다면 클로저와 많이 친해졌을 거라 생각한다. 다음은 **_useRef_** 다.
+
+## useRef
+
+재랜더링은 직접 조작하고 있기 때문에, 재랜더링이 일어나지 않는 부분은 구현하지 않았다. 재랜더링이 일어나도 값이 바뀌지 않는 부분을 중점적으로 구현했다.
+
+```js
+const React = (function () {
+  let _state = [];
+  let _stateIdx = 0;
+  let _refs = [];
+  let _refsIdx = 0;
+
+  return {
+    render(Component) {
+		...
+    },
+    useState(initialValue) {
+		...
+    },
+    useRef(initialValue) {
+      if (!_refs[_refsIdx]) {
+        _refs[_refsIdx] = {
+          current: initialValue,
+        };
+      }
+      return _refs[_refsIdx++];
+    },
+  };
+})();
+
+function Counter() {
+  const [count, setCount] = React.useState(0);
+  const someRef = React.useRef("변하지 않는 값");
+
+  return {
+    click: () => {
+      setCount(count + 1); // 상태 변경 -> 리렌더링 발생
+    },
+    render: () =>
+      console.log("render:", {
+        count,
+        refValue: someRef.current,
+      }),
+  };
+}
+
+let counter;
+counter = React.render(Counter);
+// render: { count: 0, refValue: '변하지 않는 값' }
+
+counter.click();
+counter = React.render(Counter);
+// render: { count: 1, refValue: '변하지 않는 값' }
+```
+
+### 참고
+
+- [https://developer.mozilla.org/en-US/docs/Web/JavaScript/Closures](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Closures)
+- [https://inpa.tistory.com/entry/JS-%F0%9F%93%9A-%ED%81%B4%EB%A1%9C%EC%A0%80](https://inpa.tistory.com/entry/JS-%F0%9F%93%9A-%ED%81%B4%EB%A1%9C%EC%A0%80)
+- [https://hewonjeong.github.io/deep-dive-how-do-react-hooks-really-work-ko/](https://hewonjeong.github.io/deep-dive-how-do-react-hooks-really-work-ko/)
+- [https://medium.com/@ryardley/react-hooks-not-magic-just-arrays-cd4f1857236e](https://medium.com/@ryardley/react-hooks-not-magic-just-arrays-cd4f1857236e)

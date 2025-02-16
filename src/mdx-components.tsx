@@ -12,18 +12,20 @@ export default function useMDXComponents(
     //   <p className="text-lg font-semibold mb-3">{children}</p>
     // ),
     h2: ({ children }) => (
-      <h2 className="text-2xl font-main font-semibold mt-10 mb-2">
+      <h2 className="text-4xl font-main font-semibold mt-12 mb-3">
         {children}
       </h2>
     ),
     h3: ({ children }) => (
-      <h3 className="text-xl font-main font-semibold mt-8 mb-1">{children}</h3>
+      <h3 className="text-2xl font-main font-semibold mt-10 mb-3">
+        {children}
+      </h3>
     ),
     h4: ({ children }) => (
-      <h4 className="text-lg font-main font-semibold mt-6 mb-1">{children}</h4>
+      <h4 className="text-xl font-main font-semibold mt-8 mb-3">{children}</h4>
     ),
     p: ({ children }) => (
-      <p className="text-base font-main leading-7 mb-4 text-gray-700">
+      <p className="text-[17px] font-main leading-9 mb-6 text-gray-700">
         {children}
       </p>
     ),

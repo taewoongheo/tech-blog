@@ -131,8 +131,10 @@ export default async function Post({
 
           {/* Description and Date */}
           <div className="space-y-2">
-            <p className="font-main text-[#969696]">{description}</p>
-            <p className="font-main text-[#969696]">
+            <p className="font-main text-[#969696] text-[17px]">
+              {description}
+            </p>
+            <p className="font-main text-[#969696] text-[17px]">
               {' '}
               {`${year}.${month.length >= 2 ? month : `0${month}`}.${dates.length >= 2 ? dates : `0${dates}`}`}
             </p>

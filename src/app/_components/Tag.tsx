@@ -6,7 +6,7 @@ export default function Tag({ tag }: { tag: Categories }) {
     <span
       className="
       inline-block
-      mr-1
+      mr-[10px]
       font-sans
       text-sm
       lg:text-[15px]
