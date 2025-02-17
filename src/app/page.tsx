@@ -7,7 +7,7 @@ import getAllPostFrontMatter from './_utils/get-post';
 export default async function Main(): Promise<React.ReactElement> {
   const posts = await getAllPostFrontMatter();
   return (
-    <div className="w-full flex flex-col items-center mb-[5rem]">
+    <div className="w-full flex flex-col items-center">
       <Navbar />
       <Intro />
       <PostList posts={posts} />

@@ -3,14 +3,14 @@ import Link from 'next/link';
 
 export default function Navbar(): React.ReactNode {
   return (
-    <nav className="flex justify-between items-center w-full p-4">
+    <nav className="flex justify-between items-center w-full py-4">
       <Link
         href="/"
-        className="font-main text-[0.8rem] md:text-[0.9rem] lg:text-[1rem] font-[400] sm:pl-10 hover:text-main"
+        className="font-main text-[0.8rem] md:text-[0.9rem] lg:text-[1rem] font-[400] hover:text-main"
       >
         TAEWOONGHEO_TECH_BLOG
       </Link>
-      <Link href="https://github.com/taewoongheo" className="sm:pr-10">
+      <Link href="https://github.com/taewoongheo">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 30 30"

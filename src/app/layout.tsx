@@ -63,7 +63,7 @@ export default function RootLayout({
 }): React.ReactNode {
   return (
     <html lang="en" className={mainFont.variable}>
-      <body>{children}</body>
+      <body className="px-8 sm:px-8">{children}</body>
     </html>
   );
 }

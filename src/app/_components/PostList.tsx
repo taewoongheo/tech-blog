@@ -10,12 +10,12 @@ export default function PostList({
 }): React.ReactNode {
   return (
     <section>
-      <div className="flex flex-col items-center w-full px-[1rem] sm:px-[2rem]">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-10 lg:gap-16 max-w-[1200px] mb-24">
         {posts.map((post) => (
           <Link
             key={post.slug.toString()}
             href={`post/${post.slug}`}
-            className="group w-full sm:max-w-[600px] md:max-w-[600px] lg:max-w-[620px]"
+            className="group w-full"
           >
             <PostItem post={post} />
           </Link>
