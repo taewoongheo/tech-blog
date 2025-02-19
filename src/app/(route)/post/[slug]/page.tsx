@@ -10,6 +10,7 @@ import { getAllPostPaths, getPostPath } from '@/app/_utils/get-post-path';
 import Giscus from './giscus';
 import useMDXComponents from '@/mdx-components';
 import Overview from './Overview';
+import { Post as PostType } from '@/app/_types/Post';
 
 type params = { slug: string };
 
@@ -92,7 +93,7 @@ export default async function Post({
 
   const data = await pfs.readFile(postPath, 'utf-8');
   const mdxSource = matter(data);
-  const mdxMetadata = mdxSource.data;
+  const mdxMetadata = mdxSource.data as PostType;
   const mdxContent = mdxSource.content;
 
   const code = String(

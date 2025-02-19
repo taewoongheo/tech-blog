@@ -5,11 +5,7 @@ import { Categories } from '@/app/_types/Category';
 import { formatRowDateForDisplay } from '@/app/_utils/date-utils';
 import { Post } from '@/app/_types/Post';
 
-interface OverviewProps {
-  mdxMetadata: Post;
-}
-
-function Overview({ mdxMetadata }: OverviewProps) {
+export default function Overview({ mdxMetadata }: { mdxMetadata: Post }) {
   const { title, thumbnail, description, tags, date } = mdxMetadata;
   const [year, month, dates] = formatRowDateForDisplay(date);
 
@@ -47,5 +43,3 @@ function Overview({ mdxMetadata }: OverviewProps) {
     </div>
   );
 }
-
-export default Overview;
