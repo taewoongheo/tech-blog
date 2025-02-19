@@ -5,9 +5,11 @@
 html,
 body {
   width: 100%;
-  height: 100%;
+  height: auto;
   font-size: 16px;
   overflow-x: hidden;
+  padding: 0;
+  margin: 0;
 }
 
 :root {
@@ -45,7 +47,7 @@ code[data-language='plaintext'] {
 pre > code {
   background-color: var(--codeBlockBackgroundColor);
   outline: 1px solid var(--codeBlockOutlineColor);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   border-radius: 0.3rem;
   padding: 16px;
   overflow-x: auto; /* 가로 스크롤 */
@@ -71,13 +73,3 @@ body {
     color-scheme: dark;
   }
 } */
-
-/* Code block styling */
-[data-rehype-pretty-code-fragment] pre {
-  font-size: 1.1rem !important;
-  line-height: 1.6 !important;
-}
-
-[data-rehype-pretty-code-fragment] code {
-  font-size: inherit;
-}

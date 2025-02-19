@@ -7,7 +7,7 @@ export default function Tag({ tag }: { tag: Categories }) {
       className="
       inline-block
       font-sans
-      text-sm
+      text-[15px]
       mr-[7px]
       lg:text-[16px]
       text-main
