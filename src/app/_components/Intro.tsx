@@ -2,7 +2,7 @@ import React from 'react';
 
 export default function Intro(): React.ReactNode {
   return (
-    <header className="relative w-full h-[500px] md:h-[600px] lg:h-[700px] mb-10">
+    <header className="relative w-full h-[500px] md:h-[600px] lg:h-[650px] mb-10">
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full">
         <div
           className="absolute inset-0 w-full h-full
