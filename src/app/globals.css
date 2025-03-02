@@ -15,7 +15,6 @@ body {
 :root {
   --mainfontcolor: #0000e7;
   --codeBlockBackgroundColor: #f9f9f9;
-  --codeBlockOutlineColor: #e1e1e1;
 }
 
 .mainfontwdth {
@@ -36,8 +35,7 @@ a {
 /* inline code */
 code[data-language='plaintext'] {
   background-color: var(--codeBlockBackgroundColor);
-  outline: 1px solid var(--codeBlockOutlineColor);
-  border-radius: 0.3rem;
+  border-radius: 0.2rem;
   color: var(--mainfontcolor);
   font-family: 'Pretendard';
   padding: 1px 4px;
