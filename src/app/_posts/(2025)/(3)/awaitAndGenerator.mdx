@@ -1,0 +1,331 @@
+---
+slug: awaitAndGenerator
+title: 'await은 어떻게 동기적으로 동작할까? 코드 뜯어보며 살펴보기'
+tags: ['Javascript']
+date: '2025-03-02'
+description: 'generator 를 통해 await 이 내부적으로 어떻게 동작하는지 살펴본다. 특히 비동기처리가 끝날 때까지 대기하는 메커니즘과 비동기 처리의 결과를 콜백 내부가 아닌 외부 스코프로 전달하는 방법을 쉽게 설명하고자 했다.'
+thumbnail: 'https://github.com/user-attachments/assets/db57d145-c5e9-40a4-b022-63b0a64c78f8'
+---
+
+프론트엔드 개발을 하다보면 비동기처리를 수도 없이 만난다. 이때 우리는 **_await_** 을 사용한다. **_await_** 을 사용하면 비동기 코드의 결과를 기다렸다가 동기적으로 처리할 수 있다.
+
+물론 엄밀히 말하면 완전히 동기적인 것은 아니다. 이벤트 루프 관점에서 봤을 땐 비동기 작업을 수행시켜놓고 다른 코드를 처리하고 있기 때문이다. 하지만 함수 내부에서 비동기 처리를 수행하는 코드 부분만 봤을 땐 동기적으로 동작한다고 볼 수 있다.
+
+비동기처리의 결과를 기다렸다가 반환하는 동작은 **_Promise_** 로도 구현이 가능하지만 `then` 이 중첩될 경우 callback hell 이 될 수 있다. 그렇다고 해서 비동기 처리 결과를 외부 스코프로 자연스럽게 빼내어 선형적 코드 구조를 만들기도 어렵다. 바로 이 점이 가독성 측면에서 **_await_** 이 해결해준 핵심 문제다.
+
+하지만 이러한 **_await_** 의 편리함에도 불구하고, 내부동작 원리는 나에게 블랙박스처럼 여겨졌다. **_Promise_** 가 비동기 작업을 처리해주는 것은 알겠는데, **_await_** 은 어떻게 그 **_Promise_** 가 완료되는 시점을 감지하고 그 결과값을 변수에 할당할 수 있는 것일까? 이 의문을 풀기 위해 내부 구현을 들여다볼 필요가 있다.
+
+따라서 이번 글의 주제는, **_await_** 을 ES8 이전의 자바스크립트로 어떻게 구현했는가? 이다. 특히 다음 두 가지 기능을 중점적으로 살펴보려고 한다:
+
+- 비동기처리가 끝날 때까지 대기하는 메커니즘
+- 비동기 처리의 결과를 콜백 내부가 아닌 외부 스코프로 전달하는 방법
+
+이 글에선 **_Babel_** 로 트랜스파일링 된 **_await_** 을 직접 살펴보고 내부 동작원리를 이해한다. 여러분이 비동기함수, 콜백, **_Promise_** 를 알고 있다면 충분히 이해할 수 있을 것이다.
+
+## generator
+
+먼저 **_generator_** 함수에 대해 간단히 살펴보겠다.
+
+**_async/await_** 이 ES8(ES2017)에 정식으로 도입되기 전, 개발자들은 **_generator_** 와 **_Promise_** 를 조합하여 유사한 기능을 구현하고 있었다.
+
+**_generator_** 는 ES6(ES2015)에서 도입된 함수로, caller와 callee 간 양방향 통신을 가능하게 한다. 일반 함수와 달리 **_generator_** 는 실행 도중 멈추고 다시 시작할 수 있는 특별한 함수다.
+
+```js
+function* generatorFunction() {
+  yield 1;
+  yield 2;
+  yield 3;
+}
+
+const generator = generatorFunction();
+
+console.log(generator.next()); // { value: 1, done: false }
+console.log(generator.next()); // { value: 2, done: false }
+console.log(generator.return('hello')); // { value: 'hello', done: true }
+```
+
+**_generator_** 의 핵심 특징은 다음과 같다
+
+- `function*` 으로 선언
+- `next()` 호출 시 다음 `yield` 의 오른쪽 표현식까지 실행 후 중지
+- 반환값은 `{ value: 1, done: false }` 형태의 객체
+- `{ value: 1, done: false }` 의 `value` 는 yield 의 오른쪽 표현식이 평가된 결과
+- `return` 을 호출할 시 `done: true` 인 객체가 반환된다.
+
+```js
+function* generatorFunction() {
+  const x = yield 1;
+  return x + 10;
+}
+
+const generator = generatorFunction();
+console.log(generator.next());
+console.log(generator.next(10));
+```
+
+- `next()` 에 인자를 전달하면 이전 yield 를 포함한 표현식 전체를 해당 값으로 대체
+  - **_yield 1_**, **_yield x + y_** 던 그냥 전체가 인자로 평가된다
+
+이렇게 generator를 이용해 중단-재개 메커니즘을 구현할 수 있다.
+
+## babel 환경 설정
+
+위에서 **_await_** 은 **_Promise_** 와 **_generator_** 를 통해 구현할 수 있다고 언급했다. 실제로 **_Babel_** 과 같은 트랜스파일러는 **_async/await_** 구문을 ES5 호환 코드로 변환할 때 **_generator_** 기반 접근 방식을 사용한다.
+
+따라서 기존 **_await_** 을 사용한 코드를 ES5 코드로 변경하여 **_await_** 이 어떻게 동작하는지 살펴볼것이다.
+
+**_await_** 을 **_Promise_** 와 **_generator_** 로 구현된 코드로 변경하려면, **_await_** 은 없고 **_generator_**, **_Promise_** 는 존재하는 자바스크립트 버전으로 트랜스파일링 해야 한다.
+
+**_generator_** 기능의 브라우저 지원 정보를 살펴보면, 크롬 버전 39부터 기본 **_generator_** 기능을 지원하고 있다. 그리고 **_generator_**의 `return` 메서드는 크롬 버전 50부터 지원한다.
+![](https://i.imgur.com/t0wTKut.png)
+
+**_await_** 은 크롬 버전 55부터 지원한다.
+![](https://i.imgur.com/lgdntWE.png)
+
+**_Babel_** 에선 `targets` 속성을 통해 트랜스파일링될 자바스크립트 버전을 설정할 수 있다. **_generator_** 의 `return` 메서드까지 필요하므로 크롬 51 버전을 타겟으로 설정했다. 이렇게 하면 **_generator_** 와 **_Promise_** 는 사용 가능하지만 아직 **await** 이 구현되지 않은 환경으로 코드가 변환된다.
+
+```js
+{
+  "presets": [
+    [
+      "@babel/preset-env",
+      {
+        "targets": {
+          "chrome": "51"
+        }
+      }
+    ]
+  ]
+}
+```
+
+## 뜯어보기
+
+```js
+function findUserById(id) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      console.log('waited 1 sec');
+      resolve({
+        id: id,
+        name: 'user' + id,
+      });
+    }, 1000);
+  });
+}
+
+async function run() {
+  const user = await findUserById(1);
+  console.log(user);
+}
+
+run();
+
+// waited 1 sec
+// { id: 1, name: 'user1' }
+```
+
+`fineUserById` 함수는 1초 뒤 유저 객체를 반환하는 비동기 함수다. `await` 을 사용하여 비동기 처리 결과를 user 에 담아 출력한다.
+
+트랜스파일링 된 결과는 다음과 같다.
+
+```js
+'use strict';
+
+function asyncGeneratorStep(n, t, e, r, o, a, c) {
+  try {
+    var i = n[a](c),
+      u = i.value;
+  } catch (n) {
+    return void e(n);
+  }
+  i.done ? t(u) : Promise.resolve(u).then(r, o);
+}
+function _asyncToGenerator(n) {
+  return function () {
+    var t = this,
+      e = arguments;
+    return new Promise(function (r, o) {
+      var a = n.apply(t, e);
+      function _next(n) {
+        asyncGeneratorStep(a, r, o, _next, _throw, 'next', n);
+      }
+      function _throw(n) {
+        asyncGeneratorStep(a, r, o, _next, _throw, 'throw', n);
+      }
+      _next(void 0);
+    });
+  };
+}
+function findUserById(id) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({
+        id: id,
+        name: 'user' + id,
+      });
+    }, 1000);
+  });
+}
+function run() {
+  return _run.apply(this, arguments);
+}
+function _run() {
+  _run = _asyncToGenerator(function* () {
+    const user = yield findUserById(1);
+    console.log(user);
+  });
+  return _run.apply(this, arguments);
+}
+run();
+```
+
+한번 천천히 살펴보자. 실행 흐름대로 짚어봤다.
+
+```js
+function run() {
+  return _run.apply(this, arguments);
+}
+function _run() {
+  _run = _asyncToGenerator(function* () {
+    const user = yield findUserById(1);
+    console.log(user);
+  });
+  return _run.apply(this, arguments);
+}
+run();
+```
+
+가장 먼저, `_run` 부분이다. 잘 보면, 선언된 **_generator_** 함수에 우리가 사용했던 코드와 함께 **_await_** 이 **_yield_** 로 변경된 것을 볼 수 있다. 이 부분에서 알아야 할 것은, `_run` 변수에 **_generator_** 를 인자로 넣는 `_asyncToGenerator` 를 할당하고 실행한다는 것이다.
+
+```js
+function _asyncToGenerator(n) {
+  return function () {
+    var t = this,
+      e = arguments;
+    return new Promise(function (r, o) {
+      var a = n.apply(t, e);
+      function _next(n) {
+        asyncGeneratorStep(a, r, o, _next, _throw, 'next', n);
+      }
+      function _throw(n) {
+        asyncGeneratorStep(a, r, o, _next, _throw, 'throw', n);
+      }
+      _next(void 0);
+    });
+  };
+}
+```
+
+`n` 은 비동기 결과를 받아 출력하는 **_generator_** 함수다. `_asyncToGenerator` 는 **_Promise_** 객체를 반환하는데, 콜백에서 `_next`, `_throw` 라는 함수를 정의한 뒤 `_next(void 0)`을 호출한다.
+
+```js
+return new Promise(function (r, o) {
+  var a = n.apply(t, e);
+  function _next(n) {
+    asyncGeneratorStep(a, r, o, _next, _throw, 'next', n);
+  }
+  function _throw(n) {
+    asyncGeneratorStep(a, r, o, _next, _throw, 'throw', n);
+  }
+  _next(void 0);
+});
+```
+
+`_next(void 0)` 으로 호출하는 함수는 바로 위에서 정의된 `_next(n)` 이다. `void 0` 은 **_undefined_** 를 넘기는 하나의 방식이기 때문에 단순히 빈 인자를 넘겨준다고 보면 된다. `_next(n)` 안에선 `asyncGeneratorStep` 함수가 실행된다.
+
+```js
+function asyncGeneratorStep(n, t, e, r, o, a, c) {
+  try {
+    var i = n[a](c),
+      u = i.value;
+  } catch (n) {
+    return void e(n);
+  }
+  i.done ? t(u) : Promise.resolve(u).then(r, o);
+}
+```
+
+여기서부터 중요하다. `n` 은 맨 처음에 정의된 **_generator_** 함수, `a` 는 **_"next"_** 문자열, `c` 는 **_void 0_** 이므로 **_undefined_** 이다.
+
+**_try_** 문 내부의 **_var i = n\[a]\(c)_** 는 **_generator\["next"]()_** 이다. 즉, **_generator_** 함수의 `next()` 메서드를 실행하고 있다.
+
+```js
+_run = _asyncToGenerator(function* () {
+  const user = yield findUserById(1);
+  console.log(user);
+});
+```
+
+그 결과로 **_generator_** 함수가 실행되는데, 첫 번째 `next()` 이므로 `findUserById` 까지 실행되고 중단된다. 이때부터 비동기 처리가 시작된다.
+
+```js
+function asyncGeneratorStep(n, t, e, r, o, a, c) {
+  try {
+    var i = n[a](c),
+      u = i.value;
+  } catch (n) {
+    return void e(n);
+  }
+  i.done ? t(u) : Promise.resolve(u).then(r, o);
+}
+```
+
+이후 다시 `asyncGeneratorStep` 로 돌아와 보면, `u = i.value` 로 `u` 변수에 **_yield_** 의 오른쪽 문(함수)의 참조를 담는다. 그러니까 `findUserById` 의 참조가 담긴 것이다.
+
+이후 `i.done` 을 검증한다. 위에서 실행된 `next()` 는 첫 번째 `next()` 이므로 **_i.done_** 은 **_false_**, 따라서 `Promise.resolve(u).then(r, o)` 가 실행된다.
+
+`u` 는 `next()` 의 결과로 받은 **_findUserById_** 의 참조인데, 이것을 **_Promise_** 객체에 넣어 비동기 함수가 끝날 때까지 명시적으로 기다릴 수 있도록 한다.
+
+`r` 은 `_asyncToGenerator` 의 `_next` 함수다.
+
+여기가 포인트다. 비동기 호출(`u`)을 **_Promise.resolve()_** 로 감싼 뒤, 호출이 완료되면 `_next` 가 실행되도록 만들었다. 이때 `u(findByUserId)` 의 결과는 `then` 의 인자로 넘어가기 때문에, `findByUserId` 의 결과는 `r(_next)` 의 인자에 담겨 전달되는 것을 알 수 있다.
+
+그리고 다시 코드를 따라가다보면 `_next` 는 다시 `asyncGeneratorStep` 를 실행시키는 것을 알 수 있다.
+
+```js
+function asyncGeneratorStep(n, t, e, r, o, a, c) {
+  try {
+    var i = n[a](c),
+      u = i.value;
+  } catch (n) {
+    return void e(n);
+  }
+  i.done ? t(u) : Promise.resolve(u).then(r, o);
+}
+```
+
+아까와 동일하게 next 가 실행된다. 하지만 이번엔 두 번째 next 이다.
+
+```js
+_run = _asyncToGenerator(function* () {
+  const user = yield findUserById(1);
+  console.log(user);
+});
+```
+
+첫 번째 `next()` 는 **_yield_** 에서 중지되었으니, 이제 **_const user = ~_** 부터 시작이다. 그런데 잠깐, 아까 `_next(findByUserId 결과)` 처럼 비동기 함수의 결과를 넘겨주었던 것을 기억하는가? 그 값이 `next()` 의 인자로 전달되면서 **_yield ~_** 부분이 비동기 결과로 치환된다. 그리고 **_const user_** 에 값이 할당된다. 이후 나머지 코드가 실행된다.
+
+두 번째 `next()` 는 **_i.done = true_** 이므로 `t` 즉, **_resolve_** 함수가 실행되어 해당 값을 반환하고 정상적으로 종료한다.
+
+핵심은 비동기 처리를 기다리는 건 **_Promise_** 다. 이때 **_generator_** 는 비동기 함수를 호출하고, **_Promise_** 가 끝날 때까지 기다렸다가 이후 나머지 코드를 실행하는 역할이다.
+
+만약 제레레이터가 없다면 **_Pending_** 상태의 **_Promise_** 가 반환될 것이다.
+
+결론적으로, **_await_** 은 내부적으로
+
+- 비동기 함수 호출 뒤 제너레이터를 사용해 callee 의 실행을 중지하고
+- **_Promise_** 의 완료를 기다린 다음
+- 그 결과를 제너레이터의 다음 실행 시점에 전달하여
+- 마치 동기 코드처럼 결과값을 변수에 할당
+
+**_await_** 이 어떻게 내부적으로 비동기 처리 결과를 기다리는지, 그리고 어떻게 그 결과를 외부 스코프로 빼내 비동기 코드를 선형적으로 작성할 수 있도록 하는지 알 수 있었다.
+
+추가로 **_generator_** 또한 ES5 이전 코드로 바꿔볼 수 있다. 이 부분은 추후 포스팅에서 다뤄볼 예정이다.
+
+### 참고
+
+- [/en-US/docs/Web/JavaScript/Reference/Global_Objects/Generator](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Generator)
+- [await mdn](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/await)
+- [비동기 처리 2부 - Promise](https://www.daleseo.com/js-async-promise/)
+- [비동기 처리 3부 - async/await](https://www.daleseo.com/js-async-async-await/)
