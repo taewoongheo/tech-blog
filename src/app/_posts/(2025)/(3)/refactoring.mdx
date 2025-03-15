@@ -1,0 +1,302 @@
+---
+slug: refactoring
+title: '가독성을 위한 리펙토링 과정과 고민들'
+tags: ['CleanCode']
+date: '2025-03-15'
+description: '가독성이 좋은 코드를 위해 추상화 레벨 맞추기, 맥락 유지, 예측 가능한 함수라는 기준으로 리펙토링을 진행했던 경험을 담았습니다.'
+thumbnail: 'https://github.com/user-attachments/assets/a9ff0f36-cd94-4bb0-bf65-1c2891458423'
+---
+
+기능을 추가하려고 보니, 제가 짠 코드인데도 로직을 파악하기가 헷갈렸습니다. 이대로 간다면 영겁의 디버깅 시간을 만나게 될 게 뻔합니다. 마치 [첫 앱을 출시하고 깨달은 3가지 사실들](https://taewoongheo.github.io/tech-blog/post/makeFirstApp)의 기억이 떠올랐어요.
+
+리펙토링은 필수적입니다. 로직을 빠르고 정확하게 파악해야 하기 때문이죠. 기능 확장이 아무리 빨라도 리펙토링이 없다면 나중에 시간이 오래 걸릴 수 밖에 없습니다. 시간은 정말 중요한 자원인데, 이걸 모두 디버깅하는데에만 사용하면 너무 아깝지 않을까요?
+
+결국 제가 리펙토링을 하는 목적은 '가독성이 좋은 코드'를 만들기 위해서입니다. 아래와 같은 기준들을 세웠습니다.
+
+- 추상화 레벨 맞추기
+- 맥락을 하나로 유지하기
+- 예측 가능한 함수를 만들기
+
+이번 글은 스마트팜 프로젝트를 진행하면서 했던 리펙토링 과정들을 썼습니다. 여러분들도 저의 코드를 보면서 어떤 부분들을 고쳐나가야 할 지 같이 생각하며 연습해보면 재밌을 것 같습니다. 만약 추가적인 리펙토링이 필요하거나 근거가 충분하지 않다고 생각되는 부분이 있다면 의견을 자유롭게 공유해주시면 감사하겠습니다.
+
+## 추상화 레벨 맞추기
+
+```jsx
+function SensorData({ threshold, thresholdIsLoading }) {
+  const { sensorData, updateSensorData } = useSensorData();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await updateSensorData();
+    } catch (err) {
+      Alert.alert('오류 발생', `${err.message}`, [
+        {
+          text: '확인',
+        },
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      {sensorData === null ? (
+        <View style={styles.noSensorDataContainer}>
+          <Text>센서 데이터가 없습니다</Text>
+        </View>
+      ) : refreshing === true ? (
+        <View style={styles.loadingContainer}>
+          <Text>로딩중.....</Text>
+        </View>
+      ) : (
+        <View style={styles.dataContainer} accessibilityLabel="센서 데이터">
+          <View
+            style={styles.gridContainer}
+            accessibilityLabel="센서 데이터 정보"
+          >
+            <DataCardGrid
+              sensorData={sensorData}
+              threshold={threshold}
+              thresholdIsLoading={thresholdIsLoading}
+            />
+          </View>
+          <View style={styles.updateContainer}>
+            <TouchableOpacity
+              onPress={onRefresh}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="센서 데이터 새로고침"
+            >
+              <Text style={[styles.updateText, styles.updateBtn]}>
+                새로고침
+              </Text>
+            </TouchableOpacity>
+            {sensorData.lastUpdate && (
+              <Text
+                style={styles.updateText}
+                accessibilityLabel="마지막 업데이트 정보"
+              >
+                마지막 업데이트: {sensorData.lastUpdate}
+              </Text>
+            )}
+          </View>
+        </View>
+      )}
+    </View>
+  );
+}
+```
+
+최소한의 리펙토링이 들어간 코드입니다. 코드가 쉽게 읽히나요? 여기다 기능을 추가한다고 생각해보세요. 뭔가 지저분하다는 느낌이 듭니다.
+
+코드의 동작을 간단하게 설명해보자면, `useSensorData` 훅에서 센서 데이터를 받아옵니다. 그럼 아래의 뷰들이 렌더링돼요. 센서 데이터가 아예 없으면 "센서 데이터가 없습니다", 센서 데이터를 로딩 중이면 "로딩중.....", 센서데이터가 존재하면 센서데이터를 표시하는 컴포넌트를 보여주게 됩니다.
+
+코드를 봤을 때 어떤 것부터 고쳐야 할 것 같나요?
+
+일단 뷰의 추상화 레벨을 맞추기로 했습니다. 뷰에는 "센서 데이터가 없습니다", "로딩중.....", 데이터 표시 섹션처럼 세부 구현이 모두 노출되어 있습니다. 반면, 센서 데이터를 받아오는 기능은 훅을 통해 추상화되어 있습니다.
+
+따라서 뷰도 훅의 추상화 레벨에 맞춰 컴포넌트로 추상화 했습니다.
+
+```jsx
+<View style={styles.container}>
+  {sensorData === null ? (
+    <NoSensorData />
+  ) : refreshing === true ? (
+    <LoadingSensorData />
+  ) : (
+    <ShowSensorData
+      sensorData={sensorData}
+      threshold={threshold}
+      thresholdIsLoading={thresholdIsLoading}
+      onRefresh={onRefresh}
+    />
+  )}
+</View>
+```
+
+참고로 삼항 연산자를 이용한 분기는 그대로 유지했습니다. switch case, 조건 상수화, 조건부 래퍼 컴포넌트로도 처리할 수 있지만, 분기가 단순(조건문에 변수가 하나밖에 없음)하기 때문에 오버 엔지니어링이라는 생각이 들었기 때문입니다.
+
+추상화 측면에서 또 수정해야 할 부분이 있을까요? onRefresh 함수 자체도 try ~ catch 를 포함한 세부 구현이 드러나있어 추상화가 필요해보입니다. 하지만 그 전에 점검해야 할 부분이 있습니다.
+
+## 맥락을 하나로 유지하기
+
+저는 `onRefresh` 가 `SensorData` 내부에 존재해야 하는가 부터 점검해보려고 합니다.
+
+"`SensorData` 에서 보면, 센서데이터를 표시하는 부분이니까 새로고침하는 함수도 있을 수 있지" 라고 생각할 수 있습니다. 하지만 좀 더 생각해보면, 맥락이 여러개라는 것을 알 수 있습니다.
+
+실제로 `onRefresh` 는 `ShowSensorData` 에서만 사용하는 함수입니다. `onRefresh` 의 책임은 새로고침 그 자체이고 `NoSensorData`, `LoadingSensorData` 컴포넌트는 단지 센서 데이터의 결과만 받아서 사용하는 것입니다. 즉, `onRefresh` 와 `NoSensorData`, `LoadingSensorData` 는 맥락상 서로 연관이 없습니다.
+
+그래서 저는 `onRefresh` 함수를 `ShowSensorData` 함수 내부로 이동시켰습니다.
+
+추가적으로 `onRefresh` 함수의 하드코딩된 메시지들, **_Alert_** 함수도 `errorAlert` 라는 유틸함수로 템플릿화 하였습니다. 함수의 인자들이 무엇을 의미하는지 명확히 파악하기 위해 파라미터를 객체로 만들었죠.
+
+```js
+function ShowSensorData({
+  sensorData,
+  threshold,
+  thresholdIsLoading,
+  updateSensorData,
+  setRefreshing,
+}) {
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await updateSensorData();
+    } catch (err) {
+      errorAlert({
+        title: ALERT_MESSAGES.ERROR.TITLE,
+        message: err.message,
+        confirm: ALERT_MESSAGES.ERROR.CONFIRM,
+      });
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  return (
+    // 센서 데이터 표시
+  );
+}
+```
+
+## 예측가능한 함수 만들기
+
+```jsx
+export function useSensorData() {
+  const [sensorData, setSensorData] = useState(null);
+  const intervalRef = useRef(null);
+
+  const updateSensorData = async () => {
+    try {
+      const data = await fetchSensorData();
+      setSensorData({
+        ...data,
+        lastUpdate: new Date().toLocaleTimeString(),
+      });
+    } catch (err) {
+      // 예외처리
+    }
+  };
+
+  useEffect(() => {
+    updateSensorData();
+    intervalRef.current = setInterval(updateSensorData, UPDATE_INTERVAL);
+
+    return () => {
+      // 인터벌 해제
+    };
+  }, []);
+
+  return {
+    sensorData,
+    updateSensorData,
+  };
+}
+```
+
+사실 여러분들에게 말하지 않은 것이 있습니다. 바로 `useSensorData` 는 내부적으로 인터벌이 있다는 것이죠. 원래는 센서 데이터 값을 항상 최신값으로 받아오려는 의도였습니다. 하지만 이 사실을 모른 채로 사용한다면 진짜 사고가 날 것 입니다.
+
+`useSensorData` 라는 이름엔 인터벌에 대한 정보가 전혀 포함되어 있지 않다는 것이 문제입니다. 즉, 이름만 보고는 내부에 인터벌이 있는지 뭐가 있는지 전혀 예측할 수 없죠.
+
+예측가능한 훅을 만들기 위해선 인터벌의 존재를 외부에 알리거나 아예 제외해야 한다고 생각했습니다. 먼저 훅 이름을 바꿔보았습니다. `useIntervalSensorData` 음...더 좋은 변수명이 있을까요? 제가 보기엔 센서 값을 받아오는 기능과 인터벌이라는 두 기능이 합쳐져 단일 책임원칙을 위배하고 있는 훅처럼 보입니다.
+
+그럼 인터벌을 아예 빼고, 인터벌을 돌리는 책임을 훅을 사용하는 컴포넌트로, 즉, 외부로 넘기는건 어떨까요? 만약 타이머를 분리하여 여러 컴포넌트에서 직접 별도의 타이머를 설정해 여러 개의 센서데이터 훅을 사용하게 된다면 확실히 예측 가능한 훅이 될 것 같습니다.
+
+하지만 센서데이터의 특성 상 데이터 값은 항상 최신 값을 받아와야 합니다. 왜냐하면 센서 데이터는 환경에 따라 계속해서 변하기 때문입니다. 이러한 특성을 고려한다면 센서데이터 훅은 인터벌이 반드시 필요해보입니다. 즉, 이 훅을 사용하는 컴포넌트는 모두 인터벌을 필요로 하게 되고, 훅 내부에서 인터벌을 분리 시 인터벌에 대한 중복로직이 컴포넌트마다 생기게 된다고 보았습니다.
+
+결국 훅에 인터벌을 포함한 채 외부 사용자에게 인터벌의 존재를 알리는 것이 훅의 맥락에 맞다고 느꼈습니다. 그래서 저는 옵션을 추가하는 방식을 사용했습니다.
+
+```jsx
+export function useSensorData({ autoUpdate, interval }) {
+  const [sensorData, setSensorData] = useState(null);
+  const intervalRef = useRef(null);
+
+  const updateSensorData = async () => {
+    try {
+      const data = await fetchSensorData();
+      setSensorData({
+        ...data,
+        lastUpdate: new Date().toLocaleTimeString(),
+      });
+    } catch (err) {
+      // 에러처리
+    }
+  };
+
+  useEffect(() => {
+    updateSensorData();
+
+    if (!autoUpdate) {
+      return;
+    }
+
+    intervalRef.current = setInterval(updateSensorData, interval);
+
+    return () => {
+      // 인터벌 해제
+    };
+  }, []);
+
+  return {
+    sensorData,
+    updateSensorData,
+  };
+}
+```
+
+`autoUpdate`, `interval` 을 인자로 받아 인터벌 여부와 그 주기를 명시적으로 입력받습니다.
+
+```jsx
+function SensorData({threshold, thresholdIsLoading}) {
+  const {sensorData, updateSensorData} = useSensorData({
+    autoUpdate: true,
+    interval: UPDATE_INTERVAL,
+  });
+```
+
+훅의 의도를 유지하고, 동시에 인터벌의 존재를 확실히 파악시켜 잠재적인 오류를 제거시켰습니다.
+
+## 결론
+
+```js
+function SensorData({ threshold, thresholdIsLoading }) {
+  const { sensorData, updateSensorData } = useSensorData({
+    autoUpdate: true,
+    interval: UPDATE_INTERVAL,
+  });
+  const [refreshing, setRefreshing] = useState(false);
+
+  return (
+    <View style={styles.container}>
+      {sensorData === null ? (
+        <NoSensorData />
+      ) : refreshing === true ? (
+        <LoadingSensorData />
+      ) : (
+        <ShowSensorData
+          sensorData={sensorData}
+          threshold={threshold}
+          thresholdIsLoading={thresholdIsLoading}
+          updateSensorData={updateSensorData}
+          setRefreshing={setRefreshing}
+        />
+      )}
+    </View>
+  );
+}
+```
+
+최종적으로 리펙토링된 코드입니다. 가독성이 많이 좋아지지 않았나요?
+
+지금까지 세 가지 기준들을 가지고 가독성을 위한 리펙토링을 진행해보았습니다. 아마 상황에 딱 맞는 예시코드가 아닐 순 있어도 가독성좋은 코드에 대해 배우고 직접 적용해보며 스스로 많이 배웠습니다.
+
+느낀 점은 **_내가 다른 사람이라면 이 코드를 봤을 때 한번에 흐름을 파악할 수 있는가?_** 라는 생각이 도움이 된다는 것입니다. 또한 리펙토링 요소에는 많은 것들이 있는데, 한꺼번에 모든 것들을 고려하려하지 말고 일단 하나에만 집중하면서 계속 순회하는 방식도 많은 도움이 됐습니다.
+
+### 참고
+
+- [토스에서 말하는 가독성 좋은 코드](https://toss.tech/article/firesidechat_frontend_1)
+- [Frontend Fundamentals](https://frontend-fundamentals.com/)
