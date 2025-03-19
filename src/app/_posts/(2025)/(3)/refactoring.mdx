@@ -94,7 +94,7 @@ function SensorData({ threshold, thresholdIsLoading }) {
 
 코드의 동작을 간단하게 설명해보자면, `useSensorData` 훅에서 센서 데이터를 받아옵니다. 그럼 아래의 뷰들이 렌더링돼요. 센서 데이터가 아예 없으면 "센서 데이터가 없습니다", 센서 데이터를 로딩 중이면 "로딩중.....", 센서데이터가 존재하면 센서데이터를 표시하는 컴포넌트를 보여주게 됩니다.
 
-코드를 봤을 때 어떤 것부터 고쳐야 할 것 같나요?
+어떤 것부터 고쳐야 할 것 같나요?
 
 일단 뷰의 추상화 레벨을 맞추기로 했습니다. 뷰에는 "센서 데이터가 없습니다", "로딩중.....", 데이터 표시 섹션처럼 세부 구현이 모두 노출되어 있습니다. 반면, 센서 데이터를 받아오는 기능은 훅을 통해 추상화되어 있습니다.
 
@@ -131,7 +131,7 @@ function SensorData({ threshold, thresholdIsLoading }) {
 
 그래서 저는 `onRefresh` 함수를 `ShowSensorData` 함수 내부로 이동시켰습니다.
 
-추가적으로 `onRefresh` 함수의 하드코딩된 메시지들, **_Alert_** 함수도 `errorAlert` 라는 유틸함수로 템플릿화 하였습니다. 함수의 인자들이 무엇을 의미하는지 명확히 파악하기 위해 파라미터를 객체로 만들었죠.
+추가적으로 `onRefresh` 함수의 하드코딩된 메시지들, **_Alert_** 함수도 `errorAlert` 라는 유틸함수로 만들어 응집도를 높였습니다. 함수의 인자들이 무엇을 의미하는지 명확히 파악하기 위해 파라미터를 객체로 만들었죠.
 
 ```js
 function ShowSensorData({
@@ -162,6 +162,14 @@ function ShowSensorData({
   );
 }
 ```
+
+### 25.03.19 추가
+
+다시 생각해보니, `onRefresh` 는 `SensorData` 컴포넌트 내부에서 `refreshing` 이라는 상태를 변경하는 기능을 가지고 있습니다.
+
+위의 예시처럼 `onRefresh` 를 `ShowSensorData` 내부로 이동시킨다면, `refreshing` 를 변경하는 책임이 보이지 않아 오히려 가독성이 떨어질 수 있습니다.
+
+따라서 다시 `onRefresh` 를 `SensorData` 컴포넌트 내부로 이동시켰습니다. 결론적으로 다시 돌아왔기 때문에 바뀐 것은 없지만, 맥락을 파악하는 과정 위주로 봐주시면 감사하겠습니다.
 
 ## 예측가능한 함수 만들기
 
@@ -258,7 +266,7 @@ function SensorData({threshold, thresholdIsLoading}) {
   });
 ```
 
-훅의 의도를 유지하고, 동시에 인터벌의 존재를 확실히 파악시켜 잠재적인 오류를 제거시켰습니다.
+훅의 의도를 유지하고, 동시에 인터벌의 존재를 확실히 파악시켜 잠재적인 오류를 제거했습니다.
 
 ## 결론
 
@@ -269,6 +277,21 @@ function SensorData({ threshold, thresholdIsLoading }) {
     interval: UPDATE_INTERVAL,
   });
   const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await updateSensorData();
+    } catch (err) {
+      errorAlert({
+        title: ALERT_MESSAGES.ERROR.TITLE,
+        message: err.message,
+        confirm: ALERT_MESSAGES.ERROR.CONFIRM,
+      });
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -281,8 +304,7 @@ function SensorData({ threshold, thresholdIsLoading }) {
           sensorData={sensorData}
           threshold={threshold}
           thresholdIsLoading={thresholdIsLoading}
-          updateSensorData={updateSensorData}
-          setRefreshing={setRefreshing}
+          onRefresh={onRefresh}
         />
       )}
     </View>
@@ -291,6 +313,8 @@ function SensorData({ threshold, thresholdIsLoading }) {
 ```
 
 최종적으로 리펙토링된 코드입니다. 가독성이 많이 좋아지지 않았나요?
+
+25.03.19추가) 좀 더 개선한다고 하면, onRefresh의 try~catch 부분이 드러난 구현세부를 refreshing의 변경책임을 보여주며 추상화할 수 있을 것 같아요. 이 부분은 계속 고민하며 수정해볼 예정입니다.
 
 지금까지 세 가지 기준들을 가지고 가독성을 위한 리펙토링을 진행해보았습니다. 아마 상황에 딱 맞는 예시코드가 아닐 순 있어도 가독성좋은 코드에 대해 배우고 직접 적용해보며 스스로 많이 배웠습니다.
 
