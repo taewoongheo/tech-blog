@@ -169,7 +169,25 @@ function ShowSensorData({
 
 위의 예시처럼 `onRefresh` 를 `ShowSensorData` 내부로 이동시킨다면, `refreshing` 를 변경하는 책임이 보이지 않아 오히려 가독성이 떨어질 수 있습니다.
 
-따라서 다시 `onRefresh` 를 `SensorData` 컴포넌트 내부로 이동시켰습니다. 결론적으로 다시 돌아왔기 때문에 바뀐 것은 없지만, 맥락을 파악하는 과정 위주로 봐주시면 감사하겠습니다.
+따라서 다시 `onRefresh` 를 `SensorData` 컴포넌트 내부로 이동시켰습니다.
+
+결국 다시 돌아왔지만 대신, 추상화 레벨 맞추기 관점에서 에러 핸들링 로직을 한번 더 추상화시켰어요.
+
+```js
+const onRefresh = async () => {
+  setRefreshing(true);
+  try {
+    await updateSensorData();
+  } catch (err) {
+    // 에러 처리를 위한 별도 함수 추출 가능
+    handleRefreshError(err);
+  } finally {
+    setRefreshing(false);
+  }
+};
+```
+
+크게 바뀐 것은 없지만, 맥락을 파악하는 과정 위주로 봐주시면 감사하겠습니다.
 
 ## 예측가능한 함수 만들기
 
@@ -283,11 +301,8 @@ function SensorData({ threshold, thresholdIsLoading }) {
     try {
       await updateSensorData();
     } catch (err) {
-      errorAlert({
-        title: ALERT_MESSAGES.ERROR.TITLE,
-        message: err.message,
-        confirm: ALERT_MESSAGES.ERROR.CONFIRM,
-      });
+      // 에러 처리를 위한 별도 함수 추출 가능
+      handleRefreshError(err);
     } finally {
       setRefreshing(false);
     }
@@ -313,8 +328,6 @@ function SensorData({ threshold, thresholdIsLoading }) {
 ```
 
 최종적으로 리펙토링된 코드입니다. 가독성이 많이 좋아지지 않았나요?
-
-25.03.19추가) 좀 더 개선한다고 하면, onRefresh의 try~catch 부분이 드러난 구현세부를 refreshing의 변경책임을 보여주며 추상화할 수 있을 것 같아요. 이 부분은 계속 고민하며 수정해볼 예정입니다.
 
 지금까지 세 가지 기준들을 가지고 가독성을 위한 리펙토링을 진행해보았습니다. 아마 상황에 딱 맞는 예시코드가 아닐 순 있어도 가독성좋은 코드에 대해 배우고 직접 적용해보며 스스로 많이 배웠습니다.
 
