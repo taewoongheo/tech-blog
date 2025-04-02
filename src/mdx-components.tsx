@@ -61,7 +61,7 @@ export default function useMDXComponents(
     blockquote: ({ children }) => (
       <blockquote
         className="
-        my-6
+        mb-6
         pl-6
         border-l-4
         border-gray-200

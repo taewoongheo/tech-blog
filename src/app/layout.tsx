@@ -17,7 +17,7 @@ export const metadata = {
   authors: [{ name: '허태웅', url: 'https://github.com/taewoongheo' }],
   category: 'Technology',
   description:
-    '프로젝트를 진행하면서 배우고 고민한 것들을 대해 기록하는 블로그입니다. 기술에 종속되지 않고 문제해결을 중심으로 기록해요. 몰입을 중요하게 생각합니다.',
+    '프로젝트를 진행하면서 배우고 고민한 것들을 대해 기록하는 블로그입니다. 문제해결을 중심으로 기록해요. 몰입을 중요하게 생각합니다.',
   alternates: {
     canonical: '/',
   },

@@ -1,25 +1,15 @@
 import React from 'react';
-import Image from 'next/image';
 import { Post } from '../_types/Post';
 import Tag from './Tag';
 import { formatRowDateForDisplay } from '../_utils/date-utils';
 
 export default function PostItem({ post }: { post: Post }) {
-  const { title, tags, date, description, thumbnail } = post;
+  const { title, tags, date, description } = post;
   const [year, month, dates] = formatRowDateForDisplay(date);
 
   return (
     <article>
-      <div className="hover:cursor-pointer group mb-10">
-        <div className="relative w-full aspect-[1.8/1] lg:aspect-[1.6/1] rounded-2xl overflow-hidden mb-4">
-          <Image
-            src={thumbnail}
-            alt=""
-            fill
-            className="object-cover transition-all duration-300 group-hover:scale-105 filter grayscale"
-          />
-        </div>
-
+      <div className="hover:cursor-pointer group mb-2">
         <div>
           {/* Tags */}
           <div className="flex mb-2">

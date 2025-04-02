@@ -9,7 +9,7 @@ export default function MdxLayout({
   return (
     <>
       <Navbar />
-      <div className="flex flex-col justify-center content-center w-full sm:max-w-[700px] lg:max-w-[750px] mx-auto">
+      <div className="flex flex-col justify-center content-center w-full sm:max-w-[650px] lg:max-w-[700px] mx-auto">
         {children}
       </div>
     </>
