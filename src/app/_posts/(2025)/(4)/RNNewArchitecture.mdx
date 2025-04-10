@@ -1,7 +1,7 @@
 ---
 slug: RNNewArchitecture
 title: 'React Native 렌더링 병목, v0.68~ New Architecture로 어떻게 해결했을까?'
-description: 'React Native 의 기존 Bridge 기반 아키텍처가 어떻게 렌더링 병목을 초래했는지, 그리고 v0.70부터 도입된 New Architecture 가 이를 구조적으로 어떻게 해결했는지 ***JSI*** 와 Fabric Renderer*** 관점에서 살펴봅니다.'
+description: 'React Native 의 기존 Bridge 기반 아키텍처가 어떻게 렌더링 병목을 초래했는지, 그리고 v0.68 부터 도입된 New Architecture 가 이를 구조적으로 어떻게 해결했는지 JSI 와 Fabric Renderer 관점에서 살펴봅니다.'
 tags: [ReactNative]
 date: '2025-04-10'
 ---
@@ -19,7 +19,7 @@ date: '2025-04-10'
 
 ## bridge architecture 의 병목 지점
 
-![](https://github-production-user-asset-6210df.s3.amazonaws.com/127009780/432155061-4191bd5b-9e53-4d3c-a4a8-b74d8bdb94e8.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAVCODYLSA53PQK4ZA/20250410/us-east-1/s3/aws4_request&X-Amz-Date=20250410T064542Z&X-Amz-Expires=300&X-Amz-Signature=9936d607e617bc1c12815e21825513e41e44eb0b64badc69c95c27eacc82d94c&X-Amz-SignedHeaders=host)
+![](https://i.imgur.com/pjByDR0.png)
 
 **_bridge_** 아키텍쳐가 무엇이고, 어떤 상황에서 왜 문제가 발생했을까요?
 
@@ -44,7 +44,7 @@ date: '2025-04-10'
 
 ## 새로운 아키텍처는 어떻게 문제를 해결할까?
 
-![](https://github-production-user-asset-6210df.s3.amazonaws.com/127009780/432159592-609fea62-a48f-4733-ae7d-c84aa7d2d0b6.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAVCODYLSA53PQK4ZA/20250410/us-east-1/s3/aws4_request&X-Amz-Date=20250410T065705Z&X-Amz-Expires=300&X-Amz-Signature=221c25dc7292ab6972ec29dce7d0a2f4e4b474ad01bad3d828826b517dd664ee&X-Amz-SignedHeaders=host)
+![](https://i.imgur.com/FLrgtGk.png)
 세 가지 핵심 기술이 도입되었어요.
 
 - **_Fabric Renderer_**: 새로운 렌더러
