@@ -1,0 +1,85 @@
+---
+slug: RNNewArchitecture
+title: 'React Native 렌더링 병목, v0.68~ 도입된 New Architecture로 어떻게 해결했을까?'
+description: 'React Native 의 기존 Bridge 기반 아키텍처가 어떻게 렌더링 병목을 초래했는지, 그리고 v0.70부터 도입된 New Architecture 가 이를 구조적으로 어떻게 해결했는지 ***JSI*** 와 Fabric Renderer*** 관점에서 살펴봅니다.'
+tags: [ReactNative]
+date: '2025-04-10'
+---
+
+[최근 평소 관심있던 인터랙션과 애니메이션들을 **_react native_** 에서 구현하는 프로젝트를 시작했습니다.](https://github.com/taewoongheo/react-native-interaction-lab) 이때 인터랙션, 애니메이션 하면 가장 먼저 떠오르는게 어떤게 있나요? 저는 성능 문제가 가장 먼저 떠올랐습니다. 특히나 모바일에선 그 문제가 특히 두드러진다고 느꼈어요. 사용자가 부드러움을 느끼기 위해선 보통 60 fps 를 유지하는 것이 기본입니다. 웹 환경에서는 이를 **_requestAnimationFrame_** 을 통해 해결하고 있어요.
+
+하지만 **_react native_** 는 JS와 Native thread 를 이어주는 **_bridge_** 구조에서 병목이 생기는 문제가 있었습니다.
+이는 애니메이션이나 빠른 인터랙션이 요구되는 상황에선 프레임 드랍이나 터치 딜레이로 이어지기도 했습니다. 모바일에서 자연스러운 사용자 경험을 만들기엔 꽤 큰 제약이라고 볼 수 있죠.
+
+그래서 **_React Native_** 팀은 기존의 **_bridge_** 기반 구조를 넘어, 완전히 새로운 아키텍처를 도입하면서 이 문제를 해결했습니다.
+
+> 참고로 v0.72 이전까지는 기본 아키텍처가 **_Bridge_** 기반입니다.
+
+이번 글은 **_bridge_** 아키텍쳐에서 어떤 병목을 가지고 있었는지 파악하고, 새로운 아키텍쳐에선 이를 어떻게 해결했는지에 대해 설명했어요. 특히 애니메이션, 인터랙션과 관련하여 렌더링의 병목을 위주로 설명했습니다.
+
+## bridge architecture 의 병목 지점
+
+![](https://github-production-user-asset-6210df.s3.amazonaws.com/127009780/432155061-4191bd5b-9e53-4d3c-a4a8-b74d8bdb94e8.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAVCODYLSA53PQK4ZA/20250410/us-east-1/s3/aws4_request&X-Amz-Date=20250410T064542Z&X-Amz-Expires=300&X-Amz-Signature=9936d607e617bc1c12815e21825513e41e44eb0b64badc69c95c27eacc82d94c&X-Amz-SignedHeaders=host)
+
+**_bridge_** 아키텍쳐가 무엇이고, 어떤 상황에서 왜 문제가 발생했을까요?
+
+**_bridge_** 아키텍쳐에선 세 개의 Thread 가 존재해요. 모두 비동기로 동작합니다.
+
+- **_JS Thread_**: JS 코드가 실행되는 Thread
+- **_Native Thread_**(=Main Thread, UI Thread): 호스트(모바일) 코드나 이벤트가 실행되는 Thread
+- **_Shadow Thread_**: 레이아웃이 계산되는 Thread
+
+이때 이 Thread 들을 연결하는 것이 **_bridge_** 이며, **_bridge_** 를 통해 데이터 이동 시 **_JSON_** 파싱과정이 필요해요.
+
+예시를 통해 실행과정을 간단하게 살펴보겠습니다. 유저가 touch 이벤트를 발생시켰다고 해보죠. touch 가 발생하면 Native Thread 에서 event 가 발생합니다. 그럼 그 event 정보가 **_JSON_** 으로 파싱되어 **_bridge_** 라는 통로를 통해 JS Thread 로 이동해요. JS Thread 에 도착한 event 정보는 비즈니스 로직과 함께 처리됩니다. 처리가 끝나면 결과는 layout 계산을 위해 Shadow Thread로 전달되고, 이후 UI 업데이트를 위해 native로 이어집니다. 물론 이 과정에서 파싱도 포함되고요. 벌써 파싱, 이동만 해도 정신없죠?
+
+병목은 이 과정에서 발생합니다. 위에서 세 Thread 는 모두 비동기로 동작한다고 했어요. 만약 Native Thread 에서 event 가 한꺼번에 너무 많이 발생한다면 어떨까요? 그 와중에 JS Thread 가 바쁘다면? Thread 들은 서로 비동기적으로 동작하기 때문에 드래그 애니메이션처럼 많은 이벤트를 발생시키는 경우 Native Thread 는 한꺼번에 수많은 evnet 들을 JS Thread 로 보낼겁니다. JS Thread 는 처리하는게 정신없을 거고 그렇게 프레임 드랍, 성능 문제가 발생하게 돼요.
+
+결국 문제는 크게 두 가지로 압축할 수 있어요.
+
+- **_bridge_** 를 통한 통신
+- 비동기처리
+
+그럼 이제 정확히 어디서 문제가 발생했는지 알았으니, 어떻게 문제를 해결했는지도 알아보겠습니다.
+
+## 새로운 아키텍처는 어떻게 문제를 해결할까?
+
+![](https://github-production-user-asset-6210df.s3.amazonaws.com/127009780/432159592-609fea62-a48f-4733-ae7d-c84aa7d2d0b6.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAVCODYLSA53PQK4ZA/20250410/us-east-1/s3/aws4_request&X-Amz-Date=20250410T065705Z&X-Amz-Expires=300&X-Amz-Signature=221c25dc7292ab6972ec29dce7d0a2f4e4b474ad01bad3d828826b517dd664ee&X-Amz-SignedHeaders=host)
+세 가지 핵심 기술이 도입되었어요.
+
+- **_Fabric Renderer_**: 새로운 렌더러
+- **_JSI_** (JavaScript Interface): JS Thread 에서 event queue 를 참조하기 위한 인터페이스
+- **_TurboModules_**: 네이티브 기능 호출 담당
+
+참고로 본 글은 렌더링 병목에 초점을 맞췄기 때문에 **_Fabric Renderer_**, **_JSI_** 에 대해 집중적으로 살펴볼게요.
+
+## JSI: 구조 전체를 묶는 인터페이스
+
+**_JSI_** 는 JS Thread, Native Thread, Shadow Thread 를 모두 연결해주는 핵심 기술입니다. 본질적으론 얇고 빠른 인터페이스예요. 기존 **_Bridge_** 처럼 "메시지를 직렬화해서 큐에 넣고, 다시 꺼내 처리" 하는 구조가 아니라, JS Thread, native Thread, Shadow Thread 에서 **_JSI_** 를 통해 공유해야 하는 정보(C++)들을 직접 참조하는 방식입니다.
+
+**_JSI_** 를 통해 큰 문제 중 하나였던 **_bridge_** 파싱 과정이 해결되었습니다.
+
+### Fabric Renderer: 렌더링 트리의 재구성
+
+이전에는 Shadow Tree가 플랫폼 별로 각기 다른 호스트 언어로 구현되어 있었어요. Android에선 Java, iOS에선 Objective-C나 Swift였죠. 이로 인해 JS에서 Shadow Tree에 직접 접근하거나, 빠르게 레이아웃을 갱신하는 데 한계가 있었습니다.
+
+참고로 그림에서 나온 Yoga 는 Yoga Tree를 의미합니다. Shadow Tree 는 레이아웃 정보를 포함하는데, 이때 레이아웃 정보를 갖고 있는 공간이 Shadow Node 내부의 Yoga Node 에요. 그리고 이러한 Yoga Node 들의 집합을 Yoga Tree 라고 합니다. Yoga Tree 는 레이아웃을 계산하는 주체에요.
+
+새로운 아키텍처에서는 Shadow Tree와 Shadow Node를 모두 C++로 통일하여 재작성 됐습니다. 덕분에 JS Thread가 **_JSI_** 라는 인터페이스를 통해 Shadow Node를 동기적으로 직접 수정할 수 있는 구조가 되었어요. 이전에는 모든 수정이 비동기 메시지와 **_JSON_** 파싱을 통해 이루어졌다면, 이제는 JS에서 C++ 객체를 바로 다룰 수 있게 되었어요.
+
+**_Fabric Renderer_** 에서 **_JSI_** 를 통해 Thread 간 연산을 **동기적** 으로 처리함으로써 이전에 비동기 연산이 Thread 에 쌓이는 문제를 해결했어요.
+
+### 사용자 인터랙션 처리과정
+
+초기 렌더링 이후, 사용자가 터치나 스크롤 같은 이벤트를 발생시키면 이 흐름이 다시 활성화됩니다. 이벤트가 발생하면, Native Thread에서는 이를 C++ 객체 형태로 생성하고, 바로 C++ 기반 이벤트 큐에 등록합니다. 이 큐는 JS Thread와 공유되고 있어, JS는 **_JSI_** 를 통해 C++ 이벤트 큐에 노출된 인터페이스를 호출하고, 필요한 이벤트를 즉시 가져올 수 있어요.
+
+이벤트를 받은 JS Thread는 상태 변경(setState 등)을 수행하고, 이는 다시 Fiber Tree와 Shadow Tree를 갱신하게 돼요. 이후 레이아웃을 재계산(Shadow Tree)하고, Host View를 업데이트하는 전체 흐름이 다시 한번 진행됩니다.
+
+[자세한 렌더링 과정은 여기](https://reactnative.dev/architecture/render-pipeline)
+
+### 참고
+
+- [React Native's NEW architecture #31469](https://github.com/facebook/react-native/issues/31469)
+- [React Native docs - Fabric](https://reactnative.dev/architecture/fabric-renderer)
+- [React Native docs - Render, Commit and Mount](https://reactnative.dev/architecture/render-pipeline)
+- [React Native란? 동작원리 및 아키텍쳐는 어떻게 되어있을까?](https://minf.tistory.com/entry/React-Native-React-Native%EB%9E%80-%EB%8F%99%EC%9E%91%EC%9B%90%EB%A6%AC-%EB%B0%8F-%EC%95%84%ED%82%A4%ED%85%8D%EC%B3%90%EB%8A%94-%EC%96%B4%EB%96%BB%EA%B2%8C-%EB%90%98%EC%96%B4%EC%9E%88%EC%9D%84%EA%B9%8C)

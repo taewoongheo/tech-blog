@@ -4,6 +4,7 @@ export const categories = [
   'React',
   'TypeScript',
   'NextJS',
+  'ReactNative',
 ] as const;
 
 export type Categories = (typeof categories)[number];

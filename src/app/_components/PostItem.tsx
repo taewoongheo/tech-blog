@@ -24,7 +24,7 @@ export default function PostItem({ post }: { post: Post }) {
           </h1>
 
           {/* Description */}
-          <p className="text-gray-400 text-sm lg:text-[15px] mb-2 font-main line-clamp-2">
+          <p className="text-gray-400 text-sm lg:text-[15px] mb-2 font-main">
             {description}
           </p>
 
