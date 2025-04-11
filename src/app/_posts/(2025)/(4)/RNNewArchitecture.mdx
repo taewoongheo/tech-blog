@@ -1,6 +1,6 @@
 ---
 slug: RNNewArchitecture
-title: 'React Native 렌더링 병목, v0.68~ New Architecture로 어떻게 해결했을까?'
+title: 'React Native 렌더링 병목, v0.68~ New Architecture 는 어떻게 해결했을까?'
 description: 'React Native 의 기존 Bridge 기반 아키텍처가 어떻게 렌더링 병목을 초래했는지, 그리고 v0.68 부터 도입된 New Architecture 가 이를 구조적으로 어떻게 해결했는지 JSI 와 Fabric Renderer 관점에서 살펴봅니다.'
 tags: [ReactNative]
 date: '2025-04-10'
@@ -11,7 +11,7 @@ date: '2025-04-10'
 하지만 **_react native_** 는 JS와 Native thread 를 이어주는 **_bridge_** 구조에서 병목이 생기는 문제가 있었습니다.
 이는 애니메이션이나 빠른 인터랙션이 요구되는 상황에선 프레임 드랍이나 터치 딜레이로 이어지기도 했습니다. 모바일에서 자연스러운 사용자 경험을 만들기엔 꽤 큰 제약이라고 볼 수 있죠.
 
-그래서 **_React Native_** 팀은 기존의 **_bridge_** 기반 구조를 넘어, 완전히 새로운 아키텍처를 도입하면서 이 문제를 해결했습니다.
+그래서 **_React Native_** 팀은 기존의 **_bridge_** 기반 구조를 넘어, 완전히 새로운 아키텍처를 도입하여 이 문제를 해결했습니다.
 
 > 참고로 v0.72 이전까지는 기본 아키텍처가 **_Bridge_** 기반입니다.
 
@@ -33,7 +33,7 @@ date: '2025-04-10'
 
 예시를 통해 실행과정을 간단하게 살펴보겠습니다. 유저가 touch 이벤트를 발생시켰다고 해보죠. touch 가 발생하면 Native Thread 에서 event 가 발생합니다. 그럼 그 event 정보가 **_JSON_** 으로 파싱되어 **_bridge_** 라는 통로를 통해 JS Thread 로 이동해요. JS Thread 에 도착한 event 정보는 비즈니스 로직과 함께 처리됩니다. 처리가 끝나면 결과는 layout 계산을 위해 Shadow Thread로 전달되고, 이후 UI 업데이트를 위해 native로 이어집니다. 물론 이 과정에서 파싱도 포함되고요. 벌써 파싱, 이동만 해도 정신없죠?
 
-병목은 이 과정에서 발생합니다. 위에서 세 Thread 는 모두 비동기로 동작한다고 했어요. 만약 Native Thread 에서 event 가 한꺼번에 너무 많이 발생한다면 어떨까요? 그 와중에 JS Thread 가 바쁘다면? Thread 들은 서로 비동기적으로 동작하기 때문에 드래그 애니메이션처럼 많은 이벤트를 발생시키는 경우 Native Thread 는 한꺼번에 수많은 evnet 들을 JS Thread 로 보낼겁니다. JS Thread 는 처리하는게 정신없을 거고 그렇게 프레임 드랍, 성능 문제가 발생하게 돼요.
+병목은 이 과정에서 발생합니다. 위에서 세 Thread 는 모두 비동기로 동작한다고 했어요. 만약 Native Thread 에서 event 가 한꺼번에 너무 많이 발생한다면 어떨까요? 그 와중에 JS Thread 가 바쁘다면? Thread 들은 모두 비동기적으로 동작하기 때문에 드래그 애니메이션처럼 많은 이벤트를 발생시키는 경우 Native Thread 는 한꺼번에 수많은 evnet 들을 JS Thread 로 보낼겁니다. 그렇게 JS Thread 에 task 들이 쌓이게 되고 프레임 드랍, 성능 문제가 발생하게 돼요.
 
 결국 문제는 크게 두 가지로 압축할 수 있어요.
 
@@ -53,17 +53,17 @@ date: '2025-04-10'
 
 참고로 본 글은 렌더링 병목에 초점을 맞췄기 때문에 **_Fabric Renderer_**, **_JSI_** 에 대해 집중적으로 살펴볼게요.
 
+> 참고로 그림에 있는 Yoga 는 Yoga Tree를 의미합니다. Shadow Tree 는 레이아웃 정보를 포함하는데, 이때 레이아웃 정보를 갖고 있는 공간이 Shadow Node 내부의 Yoga Node 에요. 그리고 이러한 Yoga Node 들의 집합을 Yoga Tree 라고 합니다. Yoga Tree 는 레이아웃을 계산하는 주체에요.
+
 ## JSI: 구조 전체를 묶는 인터페이스
 
 **_JSI_** 는 JS Thread, Native Thread, Shadow Thread 를 모두 연결해주는 핵심 기술입니다. 본질적으론 얇고 빠른 인터페이스예요. 기존 **_Bridge_** 처럼 "메시지를 직렬화해서 큐에 넣고, 다시 꺼내 처리" 하는 구조가 아니라, JS Thread, native Thread, Shadow Thread 에서 **_JSI_** 를 통해 공유해야 하는 정보(C++)들을 직접 참조하는 방식입니다.
 
 **_JSI_** 를 통해 큰 문제 중 하나였던 **_bridge_** 파싱 과정이 해결되었습니다.
 
-### Fabric Renderer: 렌더링 트리의 재구성
+### Fabric Renderer
 
 이전에는 Shadow Tree가 플랫폼 별로 각기 다른 호스트 언어로 구현되어 있었어요. Android에선 Java, iOS에선 Objective-C나 Swift였죠. 이로 인해 JS에서 Shadow Tree에 직접 접근하거나, 빠르게 레이아웃을 갱신하는 데 한계가 있었습니다.
-
-참고로 그림에서 나온 Yoga 는 Yoga Tree를 의미합니다. Shadow Tree 는 레이아웃 정보를 포함하는데, 이때 레이아웃 정보를 갖고 있는 공간이 Shadow Node 내부의 Yoga Node 에요. 그리고 이러한 Yoga Node 들의 집합을 Yoga Tree 라고 합니다. Yoga Tree 는 레이아웃을 계산하는 주체에요.
 
 새로운 아키텍처에서는 Shadow Tree와 Shadow Node를 모두 C++로 통일하여 재작성 됐습니다. 덕분에 JS Thread가 **_JSI_** 라는 인터페이스를 통해 Shadow Node를 동기적으로 직접 수정할 수 있는 구조가 되었어요. 이전에는 모든 수정이 비동기 메시지와 **_JSON_** 파싱을 통해 이루어졌다면, 이제는 JS에서 C++ 객체를 바로 다룰 수 있게 되었어요.
 
