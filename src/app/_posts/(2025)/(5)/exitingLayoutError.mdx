@@ -1,0 +1,233 @@
+---
+slug: exitingLayoutError
+title: 'exiting 애니메이션의 중첩 layout measure 문제 해결'
+description: 'React Native에서 Reanimated의 exiting 애니메이션이 동작하지 않는 문제를 해결한 과정과 원인을 상세히 분석합니다. Yoga 트리, layout props, 애니메이션 프레임 처리 방식 등을 이해하며 실제 코드 리팩터링 예시까지 함께 다룹니다.'
+tags: [ReactNative]
+date: '2025-05-08'
+---
+
+이번 글은 **_React Native Reanimated_** 의 **_exiting_** 애니메이션을 사용하면서 만난 에러를 해결하는 과정을 담았어요.
+
+<video
+  src="https://github.com/user-attachments/assets/126209c6-89cd-4dc7-bf3c-43cffdd52f81"
+  controls
+  autoPlay={false}
+  muted
+  loop
+  style={{ maxWidth: '50%', borderRadius: '8px' }}
+/>
+
+<br />
+
+구현한 애니메이션은 리스트 확장, 축소 애니메이션이에요. 화면에 표시된 "5km 30분
+내 주파 달성" 이라는 항목을 터치하면, 그 아래 항목들이 위에서 아래로 부드럽게
+펼쳐집니다. 다시 터치하면 항목들이 아래에서 위로 자연스럽게 접힙니다.
+
+위 애니메이션을 구현하면서 많은 시행착오를 겪었습니다. 특히, 중첩 레이아웃 구조에서 부모 컴포넌트가 먼저 umount 될 경우 **_exiting_** 애니메이션이 동작하지 않는 문제가 많이 발생했어요. 이번 글에선 이 문제에 대해 깊게 파고 들어가볼 겁니다. **_React Native_** 의 렌더링 로직 원리, **_Reanimated_** 의 애니메이션 처리 방식 등에 대해 정확히 이해할 수 있을 거에요.
+
+- React Native: 0.76
+- React Native Reanimated: 3.x
+
+## 문제 정의
+
+<video
+  src="https://github.com/user-attachments/assets/55cb72d3-46ab-45e6-b3d9-195728daa209"
+  controls
+  autoPlay={false}
+  muted
+  loop
+  style={{ maxWidth: '50%', borderRadius: '8px' }}
+/>
+
+<br />
+
+영상을 보면 리스트가 확장될 때는 애니메이션이 자연스럽게 실행되지만, 축소될 때는 애니메이션이 동작하지 않는 것을 볼 수 있어요. 자연스럽게 축소되지 않고 바로 끊겨버리죠.
+
+아래는 위 영상의 애니메이션 코드입니다.
+
+```tsx
+export function ListSection({
+  items,
+  isExpanded,
+  onToggle,
+  toggleKey,
+  suffixText,
+  styles,
+}: ListSectionProps) {
+  if (items.length === 0) return null;
+
+  const expandHeight = (values: EntryAnimationsValues) => {
+    'worklet';
+
+    const finalH = values.targetHeight;
+
+    return {
+      initialValues: { height: 0 },
+      animations: {
+        height: withTiming(finalH, { duration: 500 }),
+      },
+    };
+  };
+
+  const shrinkHeight = (values: EntryAnimationsValues) => {
+    'worklet';
+
+    return {
+      animations: {
+        height: withTiming(0, { duration: 500 }),
+      },
+    };
+  };
+
+  return (
+    <Animated.View
+      layout={LinearTransition.springify().duration(1000)}
+      style={styles.lineContainer}
+    >
+      <TouchableOpacity onPress={() => onToggle(toggleKey)}>
+        <Text numberOfLines={1} style={[styles.text, styles.highlight]}>
+          {items[0]}
+        </Text>
+      </TouchableOpacity>
+
+      {isExpanded && (
+        <Animated.View
+          entering={expandHeight}
+          exiting={shrinkHeight}
+          style={[
+            styles.dropdownContainer,
+            { overflow: 'hidden', backgroundColor: 'red' },
+          ]}
+        >
+          {items.map((el, i) => (
+            <Animated.Text
+              entering={FadeIn.springify().delay(100 * (i + 1))}
+              key={`${el}-${i}`}
+              style={styles.dropdownItem}
+            >
+              {el}
+            </Animated.Text>
+          ))}
+        </Animated.View>
+      )}
+
+      <Animated.Text
+        layout={LinearTransition.springify().duration(1000)}
+        style={styles.text}
+      >
+        {suffixText}
+      </Animated.Text>
+    </Animated.View>
+  );
+}
+```
+
+`expandHeight`는 드롭다운을 확장하는 애니메이션, `shrinkHeight`는 축소하는 애니메이션이에요. 둘 다 커스텀 애니메이션 함수로 정의했습니다.
+
+아래는 핵심이 되는 드롭다운 영역 코드에요. 부모컴포넌트인 `Animated.View`가 전체 아이템을 감싸고, 자식컴포넌트인 `Animated.Text`가 각각의 아이템을 나타냅니다.
+
+```tsx
+{
+  isExpanded && (
+    <Animated.View
+      entering={expandHeight}
+      exiting={shrinkHeight}
+      style={[
+        styles.dropdownContainer,
+        { overflow: 'hidden', backgroundColor: 'red' },
+      ]}
+    >
+      {items.map((el, i) => (
+        <Animated.Text
+          entering={FadeIn.springify().delay(100 * (i + 1))}
+          key={`${el}-${i}`}
+          style={styles.dropdownItem}
+        >
+          {el}
+        </Animated.Text>
+      ))}
+    </Animated.View>
+  );
+}
+```
+
+`isExpanded=true` 가 되면 `Animated.View` 가 mount 돼요. 이때 `entering` 으로 정의한 `expandHeight` 애니메이션이 실행됩니다. 반대로 `isExpanded=false`로 바뀌면 뷰가 unmount 되면서 `exiting`으로 등록한 `shrinkHeight`가 실행될 거라 기대했어요.
+
+하지만 예상과는 달리 `shrinkHeight` 는 실행되지 않고 다음과 같은 경고를 띄웠습니다.
+
+![](https://github.com/user-attachments/assets/9f8e5f9d-334c-4606-950c-950a7a871f83)
+
+## 원인 분석
+
+해당 경고는 보통 레이아웃 사이즈나 위치를 계산하는데 실패했을 경우 발생해요. 좀 더 구체적으로는,
+
+- 컴포넌트가 완전히 mount 되지 않은 상태에서 **_measure_** 를 시도한 경우
+- 조건부 렌더링으로 인해 mount 되지 않은 컴포넌트에 대해 측정하려는 경우
+- 레이아웃 충돌로 인해 **_Reanimated_** 가 정확한 측정을 하지 못한 경우(레이아웃 업데이트가 너무 빠를 때).
+
+즉, 레이아웃이 충돌했거나 존재하지 않은 레이아웃에 대해 measure 했기 때문이라고 볼 수 있어요.
+
+> measure 은 컴포넌트의 레이아웃 변경 시, 해당 컴포넌트의 레이아웃 정보(위치, 크기 등)을 계산하는 작업입니다.
+
+다시 천천히 짚어봤어요. **_exiting_** 애니메이션은 컴포넌트가 unmount 될 때 발생합니다. 즉, unmount 된 컴포넌트는 **_React Native_** 가 **_Yoga tree_** 에서 즉시 제외시킵니다. 이때 해당 컴포넌트에 **_exiting_** 이 있다면 그 애니메이션은 **_Reanimated_** 가 자체적으로 관리해요.
+(참고: [Reanimated Discussion #3596](https://github.com/software-mansion/react-native-reanimated/discussions/3596))
+
+즉, **_Yoga tree_** 는 컴포넌트는 즉시 제거하지만, **_Reanimated_** 는 **_exiting_** 애니메이션을 위해 해당 컴포넌트를 독립적으로 처리하고 있습니다. 이처럼 **_React Native_** 와 **_Reanimated_** 의 처리 시점이 분리되어 있다는 점이 중요해요.
+
+### layout props 와 Yoga tree
+
+여기서 중요한 사실이 있어요. **_height_**, **_width_**, **_position_** 같은 속성은 모두 **_layout props_** 에 해당하며, 이 값들은 **_Yoga tree_** 를 기반으로 계산된다는 것이에요.
+(참고: [Reanimated Discussion #3211](https://github.com/software-mansion/react-native-reanimated/discussions/3211))
+
+> Yoga tree 는 렌더링 시, 컴포넌트의 위치와 크기를 계산하고 관리하는 레이아웃 시스템입니다.
+
+이건 **_layout props_** 들을 **_withTiming_**, **_withSpring_** 같은 애니메이션 함수와 함께 사용할 때도 마찬가지에요 . 애니메이션 프레임마다 **_Yoga tree_** 에서 값을 계산하게 되죠. 즉, 애니메이션 프레임마다 layout recalculation 이 일어납니다.
+
+이걸 제 상황에 대입해볼게요. `Text` 자식 컴포넌트는 부모의 `exiting` 애니메이션이 실행될 때 부모와 함께 layout recalculation 을 수행합니다.
+
+문제는 부모 컴포넌트가 이미 unmount 되어 **_Yoga Tree_** 에서 제거된 상태라는 점이에요. 그 상태에서 자식 컴포넌트가 layout recalculation 을 위해 부모의 layout 정보를 참조하려 하다 보니 제대로 받아오지 못하고 에러가 발생한 것이죠.
+
+결국 앞서 확인했던 경고 메시지도 이 맥락에서 이해할 수 있어요. 컴포넌트가 완전히 mount 되지 않은 상태, 즉 부모가 이미 unmount 된 상황에서 **_measure_** 를 시도했기 때문에 에러가 발생한 겁니다.
+
+## 해결
+
+문제를 해결하기 위해 부모컴포넌트가 **_Yoga Tree_** 에서 제거되지 않도록 컴포넌트 구조를 변경했습니다. 구체적으로는 `Animated.View` 를 조건문 바깥으로 빼내, 항상 렌더링된 상태를 유지하도록 했어요.
+
+하지만 이렇게 구조를 바꾸면 `exiting` 애니메이션이 더 이상 동작하지 않기 때문에, 결과적으로 **_entering_**, **_exiting_** 대신 **_layout_** 애니메이션만으로 구현해야 하는 상황이 됩니다.
+저는 이 방향으로 전환하여 **_layout_** 기반 애니메이션만을 사용했고, 이후 세부 애니메이션 효과는 **_LinearTransition_** 등으로 보완했습니다.
+
+```tsx
+<Animated.View
+  layout={LinearTransition.duration(500)}
+  style={[
+    styles.dropdownContainer,
+    { overflow: 'hidden', backgroundColor: 'red' },
+  ]}
+>
+  {isExpanded && (
+    <View>
+      {items.map((el, i) => (
+        <Animated.Text
+          entering={FadeIn.springify().delay(100 * (i + 1))}
+          exiting={FadeOut.springify()}
+          key={`${el}-${i}`}
+          style={styles.dropdownItem}
+        >
+          {el}
+        </Animated.Text>
+      ))}
+    </View>
+  )}
+</Animated.View>
+```
+
+그 외에 시도해본 방법으로는 Text의 위치와 **_height_** 를 명시적으로 설정하는 방식이 있었어요. 동작은 하지만 연산량이 많고 상태 관리가 복잡해져, 오히려 새로운 레이아웃 오류를 유발할 가능성이 높다고 느껴 제외했습니다.
+
+또한, `LinearTransition` 과 `Animated.Text` 만으로도 **_height_** 변화에 대한 애니메이션을 충분히 제어할 수 있다고 보았기 때문에, 굳이 명시적인 **_height_** 설정은 필요하지 않다고 판단했습니다.
+
+### 참고
+
+- [Yoga Measure Docs](https://www.yogalayout.dev/docs/advanced/external-layout-systems)
+- [React Native Measure Docs](https://reactnative.dev/docs/the-new-architecture/layout-measurements)
+- [Reanimated Discussion #3596](https://github.com/software-mansion/react-native-reanimated/discussions/3596)
+- [Reanimated Discussion #3211](https://github.com/software-mansion/react-native-reanimated/discussions/3211)
