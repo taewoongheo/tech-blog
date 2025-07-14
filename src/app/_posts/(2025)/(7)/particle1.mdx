@@ -1,0 +1,395 @@
+---
+slug: particle1
+title: 'Building a Physics-Based Particle Interaction in React Native – Part 1: Force and Motion'
+description: 'Implementation of a physics system for particle interactions using React Native, featuring drag and touch interactions with spring forces and realistic motion'
+tags: [ReactNative]
+date: '2025-07-14'
+---
+
+<video controls autoPlay muted playsInline width="340">
+  <source
+    src="https://github.com/user-attachments/assets/302406fc-34c5-48da-9205-3ca75cc55b18"
+    type="video/mp4"
+  />
+</video>
+<br />
+
+I implemented a core interaction that will be used in my next project. Particles are randomly positioned in a circular formation, and when you drag or touch these particles, they bounce away according to physics laws and then return to their original position.
+
+The development was divided into two main stages:
+
+- Physics system for a single particle
+- Algorithm for randomly placing particles
+
+This article covers the first part - implementing the "particle physics system". I'll focus on the naive thought process I started with, briefly cover various physics laws, and explain how I implemented them in code.
+
+## First Attempt: Using Quadrants
+
+Looking at the applied laws, particles return to their original position. Therefore, every particle must maintain its fixed position.
+
+The first method I tried was drawing quadrants for particles. I divided each particle into quadrants, calculated direction based on each quadrant, calculated the distance between the touch position and particle, and tried to make it move by that distance before returning.
+
+![](https://github.com/user-attachments/assets/d0f18bde-7e78-4d63-b2a9-27023c171679)
+
+The plan sounded reasonable, but when I actually implemented it, this method failed. There was a critical problem.
+
+(You can just skim through this code)
+
+```jsx
+if (distance < INFLUENCE_DISTANCE) {
+  let nx = px.value;
+  let ny = py.value;
+
+  // case1: Quadrant1
+  if (px.value < tx && py.value > ty) {
+    nx -= dx;
+    ny += dy;
+    console.log('Quadrant1');
+  }
+
+  // case2: Quadrant2
+  else if (px.value > tx && py.value > ty) {
+    nx += dx;
+    ny += dy;
+    console.log('Quadrant2');
+  }
+
+  // case3: Quadrant3
+  else if (px.value > tx && py.value < ty) {
+    nx += dx;
+    ny -= dy;
+    console.log('Quadrant3');
+  }
+
+  // case4: Quadrant4
+  else if (px.value < tx && py.value < ty) {
+    nx -= dx;
+    ny -= dy;
+    console.log('Quadrant4');
+  }
+
+  px.value = withSpring(nx, { damping: 10 });
+  py.value = withSpring(ny, { damping: 10 });
+}
+```
+
+The problem was that the animation's starting point was the particle's original position. Because of this, when touching a particle during animation, instead of natural physics laws, it would restart from the origin. So I completely scrapped this approach and looked for another method.
+
+## Second Attempt: Direct Physics System Implementation
+
+For the second attempt, I used physics law formulas. I implemented a method that calculates position using particle weight, friction, velocity, and acceleration, and this method was successful.
+
+<video controls autoPlay muted playsInline width="340">
+  <source
+    src="https://github.com/user-attachments/assets/52b03653-0b0f-4775-be83-609264322df7"
+    type="video/mp4"
+  />
+</video>
+<br />
+
+First, let me show you the code. I'll explain this code in more detail afterward, so just look at the overall flow for now. Note that I used `useFrameCallback` to calculate physical movement on a frame-by-frame basis.
+
+```jsx
+import React from 'react';
+import {Dimensions, StyleSheet} from 'react-native';
+import Layout from '../../layout';
+import {Canvas, Circle, vec} from '@shopify/react-native-skia';
+import {
+  Gesture,
+  GestureDetector,
+  GestureUpdateEvent,
+  TapGestureHandlerEventPayload,
+} from 'react-native-gesture-handler';
+import {
+  useDerivedValue,
+  useFrameCallback,
+  useSharedValue,
+} from 'react-native-reanimated';
+import {PanGestureHandlerEventPayload} from 'react-native-screens';
+
+const width = Dimensions.get('window').width;
+const height = Dimensions.get('window').height;
+
+const c = vec(width / 2, height / 2);
+const r = 5;
+
+const INFLUENCE_DISTANCE = 100;
+
+const SPRING_CONSTANT = 0.02;
+const FRICTION = 0.97;
+const PUSH_FORCE = 30;
+const SPEED_SCALE = 0.3;
+
+function ParticleEffect(): React.JSX.Element {
+  const px = useSharedValue(c.x);
+  const py = useSharedValue(c.y);
+  const vx = useSharedValue(0);
+  const vy = useSharedValue(0);
+
+  useFrameCallback(() => {
+    const rtX = (c.x - px.value) * SPRING_CONSTANT;
+    const rtY = (c.y - py.value) * SPRING_CONSTANT;
+
+    vx.value += rtX;
+    vy.value += rtY;
+
+    vx.value *= FRICTION;
+    vy.value *= FRICTION;
+
+    px.value += vx.value * SPEED_SCALE;
+    py.value += vy.value * SPEED_SCALE;
+  });
+
+  const position = useDerivedValue(() => {
+    return vec(px.value, py.value);
+  });
+
+  const particleMove = (
+    e:
+      | GestureUpdateEvent<PanGestureHandlerEventPayload>
+      | GestureUpdateEvent<TapGestureHandlerEventPayload>,
+  ) => {
+    'worklet';
+
+    const tx = e.x;
+    const ty = e.y;
+
+    const dx = tx - px.value;
+    const dy = ty - py.value;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance < INFLUENCE_DISTANCE) {
+      const minDistance = 10;
+      const safeDistance = Math.max(distance, minDistance);
+
+      const normalizedDx = dx / safeDistance;
+      const normalizedDy = dy / safeDistance;
+
+      const forceMultiplier = INFLUENCE_DISTANCE / safeDistance;
+      const pushForce = PUSH_FORCE * forceMultiplier;
+
+      vx.value -= normalizedDx * pushForce;
+      vy.value -= normalizedDy * pushForce;
+    }
+  };
+
+  const tap = Gesture.Tap().onStart(e => particleMove(e));
+
+  const pan = Gesture.Pan()
+    .onBegin(e => {
+      particleMove(e);
+    })
+    .onUpdate(e => {
+      particleMove(e);
+    });
+
+  const combinedGesture = Gesture.Race(tap, pan);
+
+  return (
+    <Layout>
+      <GestureDetector gesture={combinedGesture}>
+        <Canvas style={styles.container}>
+          <Circle c={position} r={r} color="red" />
+        </Canvas>
+      </GestureDetector>
+    </Layout>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    width: width,
+    height: height,
+    backgroundColor: 'rgb(208, 235, 237)',
+  },
+});
+
+export default ParticleEffect;
+```
+
+### Physics System Value Meanings
+
+First, let's look at what the values used in the physics system represent.
+
+```jsx
+const c = vec(width / 2, height / 2);
+const r = 5;
+
+const INFLUENCE_DISTANCE = 100;
+
+const SPRING_CONSTANT = 0.02;
+const FRICTION = 0.97;
+const PUSH_FORCE = 30;
+const SPEED_SCALE = 0.3;
+
+function ParticleEffect(): React.JSX.Element {
+  const px = useSharedValue(c.x);
+  const py = useSharedValue(c.y);
+  const vx = useSharedValue(0);
+  const vy = useSharedValue(0);
+```
+
+- c: Default position of the particle
+- r: Radius of the particle
+- INFLUENCE_DISTANCE: Touch influence range
+  - If the distance between the touch position and particle position (c) is within INFLUENCE_DISTANCE, it's included in the influence range
+- SPRING_CONSTANT: Spring constant
+- FRICTION: Friction force
+- PUSH_FORCE: Force that touch or drag will apply to the particle
+- SPEED_SCALE: Particle velocity ratio
+- px, py: Current position of the particle
+- vx, vy: Current velocity of the particle
+
+### Velocity and Position Calculation for Single Particle
+
+This is the part that calculates the current velocity and position of the particle. I used `useFrameCallback` to calculate physics laws on a frame-by-frame basis.
+
+```jsx
+const SPRING_CONSTANT = 0.02;
+const FRICTION = 0.97;
+const PUSH_FORCE = 30;
+const SPEED_SCALE = 0.3;
+
+function ParticleEffect(): React.JSX.Element {
+
+  // ...
+
+  useFrameCallback(() => {
+    const rtX = (c.x - px.value) * SPRING_CONSTANT;
+    const rtY = (c.y - py.value) * SPRING_CONSTANT;
+
+    vx.value += rtX;
+    vy.value += rtY;
+
+    vx.value *= FRICTION;
+    vy.value *= FRICTION;
+
+    px.value += vx.value * SPEED_SCALE;
+    py.value += vy.value * SPEED_SCALE;
+  });
+
+  // ...
+}
+```
+
+First, I calculate the restoring force `rtX`, `rtY`.
+
+```jsx
+const rtX = (c.x - px.value) * SPRING_CONSTANT;
+const rtY = (c.y - py.value) * SPRING_CONSTANT;
+```
+
+The formula used here is Hooke's Law: **_F = -k × x_**
+
+- F = Restoring force
+- k = Spring constant = SPRING_CONSTANT
+- x = Displacement
+
+I calculate the displacement between the default position (`c.x`, `c.y`, = position to restore) and the current particle position (`px.value`, `py.value`), then multiply by the spring constant to get the restoring force. Since it's `c.x - px.value`, when the current position moves away to the right it becomes negative, and positive when to the left, setting the restoration direction.
+
+Next, I updated the particle's velocity based on Newton's second law **_F = ma_**.
+
+```jsx
+vx.value += rtX;
+vy.value += rtY;
+```
+
+Here, the previously calculated restoring force `rtX`, `rtY` acts as force (`F`), and mass `m` is assumed to be 1. Therefore, **_a = F / m = F_**, making the force itself the acceleration. I added this acceleration to the velocity to make the particle move in the direction of the restoring force.
+
+Next, I applied friction to prevent the particle from moving forever.
+
+```jsx
+vx.value *= FRICTION;
+vy.value *= FRICTION;
+```
+
+As friction is applied every frame, the velocity gradually decreases.
+
+Finally, I update the particle's position based on the calculated velocity. This is based on the basic uniform motion formula **_x = x0 + v × Δt_**. Note that **_Δt_** is the time interval, which I assumed to be constant and represented as the constant `SPEED_SCALE`.
+
+```jsx
+px.value += vx.value * SPEED_SCALE;
+py.value += vy.value * SPEED_SCALE;
+```
+
+`vx * SPEED_SCALE` is the distance moved during a constant time interval. Through this, the particle's position is cumulatively moved according to velocity every frame.
+
+### Implementing Physics Laws for Bouncing from Touch and Drag
+
+Next is the implementation of physics laws where particles bounce away from user touch and drag. Physics laws are applied even to particles that are already in motion.
+
+```jsx
+  const particleMove = (
+    e:
+      | GestureUpdateEvent<PanGestureHandlerEventPayload>
+      | GestureUpdateEvent<TapGestureHandlerEventPayload>,
+  ) => {
+    'worklet';
+
+    const tx = e.x;
+    const ty = e.y;
+
+    const dx = tx - px.value;
+    const dy = ty - py.value;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance < INFLUENCE_DISTANCE) {
+      const minDistance = 10;
+      const safeDistance = Math.max(distance, minDistance);
+
+      const normalizedDx = dx / safeDistance;
+      const normalizedDy = dy / safeDistance;
+
+      const forceMultiplier = INFLUENCE_DISTANCE / safeDistance;
+      const pushForce = PUSH_FORCE * forceMultiplier;
+
+      vx.value -= normalizedDx * pushForce;
+      vy.value -= normalizedDy * pushForce;
+    }
+  };
+```
+
+First, the part that calculates Euclidean distance. This part is quite intuitive. If the calculated distance (=`distance`) is smaller than `INFLUENCE_DISTANCE`, meaning it's within the influence range, the particle's velocity gets updated.
+
+```jsx
+    const tx = e.x;
+    const ty = e.y;
+
+    const dx = tx - px.value;
+    const dy = ty - py.value;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance < INFLUENCE_DISTANCE) {
+      const minDistance = 10;
+      const safeDistance = Math.max(distance, minDistance);
+```
+
+Here, `safeDistance` is to ensure the particle's minimum movement distance (=10).
+
+Next is the part that determines direction through normalization. Normalization makes the vector magnitude 1 and keeps only the direction information. Normalization is needed because when applying force, it's better to handle direction and magnitude separately.
+
+```jsx
+const normalizedDx = dx / safeDistance;
+const normalizedDy = dy / safeDistance;
+```
+
+`dx`, `dy` represent where the particle is located relative to the touch position. By dividing this value by the Euclidean distance, only the direction remains. **_normalizedDx = dx / |d|_**
+
+Finally, I calculate the magnitude of force (`pushForce`) that will actually act on the particle. To give stronger force when the touch position is closer to the particle, I used a scaling coefficient that's inversely proportional to distance.
+
+```jsx
+const forceMultiplier = INFLUENCE_DISTANCE / safeDistance;
+const pushForce = PUSH_FORCE * forceMultiplier;
+```
+
+The smaller the `safeDistance`, the larger the `forceMultiplier`, and the larger the `pushForce`. This means particles receive stronger force when closer and gradually weaker force as they get farther away.
+
+Then I made the particle's velocity increase in the opposite direction of the direction (`normalizedDx`) multiplied by force (`pushForce`) (bouncing away opposite to the touch point).
+
+```jsx
+vx.value -= normalizedDx * pushForce;
+vy.value -= normalizedDy * pushForce;
+```
+
+This way, I was finally able to implement a physics system for particles. Since this was my first time creating a physics system, I couldn't get a feel for it at first, but it became quite an interesting process as I thought about it while reviewing physics laws. In the next article, I plan to create an algorithm that determines particle positions. Thank you.
