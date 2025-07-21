@@ -1,0 +1,331 @@
+---
+slug: particle2
+title: 'Building a Physics-Based Particle Interaction in React Native – Part 2: Particle Placement'
+description: 'A deep dive into random, non-overlapping particle placement using Poisson disk sampling and edge particle generation for a 3D effect in React Native.'
+tags: [ReactNative]
+date: '2025-07-14'
+---
+
+<video controls autoPlay muted playsInline width="340">
+  <source
+    src="https://github-production-user-asset-6210df.s3.amazonaws.com/127009780/468489441-2439d74b-12d3-4be4-b108-c8a67d5745b3.mp4?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAVCODYLSA53PQK4ZA/20250721/us-east-1/s3/aws4_request&X-Amz-Date=20250721T065626Z&X-Amz-Expires=300&X-Amz-Signature=7e5a5fab7d49772898ee91a07eaa41a64ffb533859f755f44710499f19faf1c5&X-Amz-SignedHeaders=host"
+    type="video/mp4"
+  />
+</video>
+<br />
+
+[In the previous post](https://taewoongheo.github.io/tech-blog/post/particle1), I implemented a physics system for a single particle. In this post, I'll explain how I randomly placed multiple particles without overlap.
+
+## Poisson Disk Sampling
+
+There's an algorithm perfectly suited for this: Poisson disk sampling. This algorithm generates random points (particles) while guaranteeing a minimum distance between each, ensuring they don't overlap.
+
+For more details on Poisson disk sampling, see:
+
+- [Poisson disk sampling](https://en.wikipedia.org/wiki/Poisson_disk_sampling 'Poisson disk sampling').
+- [Fast Poisson Disk Sampling in Arbitrary Dimensions](https://www.cs.ubc.ca/~rbridson/docs/bridson-siggraph07-poissondisk.pdf)
+- [Coding Challenge #33: Poisson-disc Sampling](https://www.youtube.com/watch?v=flQgnCUxHlw)
+
+I adapted this algorithm for my use case. Here's the core code:
+
+```jsx
+/**
+ * random point generation using poisson disk sampling
+ *
+ * @param options sampling options
+ * @returns array of generated points
+ */
+export function poissonDiskSampling(
+  options: PoissonDiskSamplingOptions,
+): (Vector | undefined)[] {
+  const { width, height } = options;
+
+  const centerX = width / 2;
+  const centerY = height / 2;
+
+  const minDistance = ENTROPY_SYSTEM_CONSTANTS.MIN_DISTANCE;
+  const attempts = ENTROPY_SYSTEM_CONSTANTS.MAX_ATTEMPTS;
+  const cellSize = minDistance / Math.sqrt(2);
+  const grid: (Vector | undefined)[] = [];
+  const active: Vector[] = [];
+
+  const centerVector = new Vector(centerX, centerY);
+
+  // initialize grid cell
+  const colCnt = Math.floor(width / cellSize);
+  const rowCnt = Math.floor(height / cellSize);
+  for (let i = 0; i < colCnt * rowCnt; i++) {
+    grid[i] = undefined;
+  }
+
+  // start point
+  const x = centerX + ENTROPY_SYSTEM_CONSTANTS.MIN_THRESHOLD;
+  const y = centerY + ENTROPY_SYSTEM_CONSTANTS.MIN_THRESHOLD;
+  const colIdx = Math.floor(x / cellSize);
+  const rowIdx = Math.floor(y / cellSize);
+  const pos = new Vector(x, y);
+  grid[colIdx + rowIdx * colCnt] = pos;
+  active.push(pos);
+
+  while (active.length > 0) {
+    // select random point from active list
+    const randIdx = Math.floor(Math.random() * active.length);
+    const basePos = active[randIdx];
+    let found = false;
+
+    // attempt k times to find a valid sample
+    for (let n = 0; n < attempts; n++) {
+      // generate random vector
+      const sample = Vector.random2D();
+      const randMagnitude = minDistance + Math.random() * minDistance;
+      sample.setMagnitude(randMagnitude);
+      sample.addVector(basePos);
+
+      const col = Math.floor(sample.x / cellSize);
+      const row = Math.floor(sample.y / cellSize);
+
+      const distFromCenter = Vector.dist(sample, centerVector);
+
+      if (
+        col < 0 ||
+        col >= colCnt ||
+        row < 0 ||
+        row >= rowCnt ||
+        grid[col + row * colCnt] ||
+        distFromCenter > ENTROPY_SYSTEM_CONSTANTS.MAX_THRESHOLD ||
+        distFromCenter < ENTROPY_SYSTEM_CONSTANTS.MIN_THRESHOLD
+      ) {
+        continue;
+      }
+
+      const remainDistance =
+        ENTROPY_SYSTEM_CONSTANTS.MAX_THRESHOLD - distFromCenter;
+      const currentR = Math.max(0.2, remainDistance * 0.2);
+
+      let neighborDistOk = true;
+      for (let i = -1; i <= 1; i++) {
+        for (let j = -1; j <= 1; j++) {
+          const neighborColIdx = col + i;
+          const neighborRowIdx = row + j;
+
+          if (
+            neighborColIdx < 0 ||
+            neighborColIdx >= colCnt ||
+            neighborRowIdx < 0 ||
+            neighborRowIdx >= rowCnt
+          ) {
+            continue;
+          }
+
+          const neighborGridIdx = neighborColIdx + neighborRowIdx * colCnt;
+          const neighborPos = grid[neighborGridIdx];
+          if (neighborPos === undefined) {
+            continue;
+          }
+
+          const distFromNeighbor = Vector.dist(sample, neighborPos);
+          if (distFromNeighbor < currentR) {
+            neighborDistOk = false;
+            break;
+          }
+        }
+        if (!neighborDistOk) {
+          break;
+        }
+      }
+
+      if (neighborDistOk) {
+        found = true;
+        grid[col + row * colCnt] = sample;
+        active.push(sample);
+        break;
+      }
+    }
+
+    // tried k times, but failed to find a valid sample
+    if (!found) {
+      active.splice(randIdx, 1);
+    }
+  }
+
+  return grid;
+}
+```
+
+Here's a detailed explanation of the algorithm:
+
+```jsx
+  const minDistance = ENTROPY_SYSTEM_CONSTANTS.MIN_DISTANCE;
+  const attempts = ENTROPY_SYSTEM_CONSTANTS.MAX_ATTEMPTS;
+  const cellSize = minDistance / Math.sqrt(2);
+  const grid: (Vector | undefined)[] = [];
+  const active: Vector[] = [];
+```
+
+- `minDistance`: Minimum distance between particles
+- `attempts`: Maximum number of attempts per active particle (k)
+- `cellSize`: Size of each grid cell
+- `grid`: The grid storing particle positions
+- `active`: Array of currently active particles (used to generate new ones nearby)
+
+First, all cells in `grid` are initialized to `undefined`.
+
+```jsx
+// initialize grid cell
+const colCnt = Math.floor(width / cellSize);
+const rowCnt = Math.floor(height / cellSize);
+for (let i = 0; i < colCnt * rowCnt; i++) {
+  grid[i] = undefined;
+}
+
+// start point
+const x = centerX + ENTROPY_SYSTEM_CONSTANTS.MIN_THRESHOLD;
+const y = centerY + ENTROPY_SYSTEM_CONSTANTS.MIN_THRESHOLD;
+const colIdx = Math.floor(x / cellSize);
+const rowIdx = Math.floor(y / cellSize);
+const pos = new Vector(x, y);
+grid[colIdx + rowIdx * colCnt] = pos;
+active.push(pos);
+```
+
+The starting position is offset from the center (`centerX`, `centerY`) by at least `MIN_THRESHOLD`.
+
+- `MIN_THRESHOLD`: Minimum distance from the center
+
+This prevents a particle from always being generated at the exact center.
+
+Particles are then generated until the `active` array is empty.
+
+```jsx
+  while (active.length > 0) {
+    // select random point from active list
+    const randIdx = Math.floor(Math.random() * active.length);
+    const basePos = active[randIdx];
+    let found = false;
+```
+
+`active` contains particles that can generate new neighbors. This is the efficiency of Poisson disk sampling: to guarantee the minimum distance between all particles, you don't need to compare every particle to every other. You only need to check the closest neighbors. The `active` array manages this process.
+
+```jsx
+    // find a valid sample
+    for (let n = 0; n < attempts; n++) {
+      // generate random vector
+      const sample = Vector.random2D();
+      const randMagnitude = minDistance + Math.random() * minDistance;
+      sample.setMagnitude(randMagnitude);
+      sample.addVector(basePos);
+
+      const col = Math.floor(sample.x / cellSize);
+      const row = Math.floor(sample.y / cellSize);
+
+      const distFromCenter = Vector.dist(sample, centerVector);
+
+      if (
+        col < 0 ||
+        col >= colCnt ||
+        row < 0 ||
+        row >= rowCnt ||
+        grid[col + row * colCnt] ||
+        distFromCenter > ENTROPY_SYSTEM_CONSTANTS.MAX_THRESHOLD ||
+        distFromCenter < ENTROPY_SYSTEM_CONSTANTS.MIN_THRESHOLD
+      ) {
+        continue;
+      }
+```
+
+For each `basePos`, the algorithm tries up to `attempts` times to find a valid new sample. The direction and magnitude are randomized. The sample's distance from the center must be within the allowed range (`MIN_THRESHOLD` to `MAX_THRESHOLD`).
+
+Neighboring particles are also checked:
+
+```jsx
+let neighborDistOk = true;
+for (let i = -1; i <= 1; i++) {
+  for (let j = -1; j <= 1; j++) {
+    const neighborColIdx = col + i;
+    const neighborRowIdx = row + j;
+
+    if (
+      neighborColIdx < 0 ||
+      neighborColIdx >= colCnt ||
+      neighborRowIdx < 0 ||
+      neighborRowIdx >= rowCnt
+    ) {
+      continue;
+    }
+
+    const neighborGridIdx = neighborColIdx + neighborRowIdx * colCnt;
+    const neighborPos = grid[neighborGridIdx];
+    if (neighborPos === undefined) {
+      continue;
+    }
+
+    const distFromNeighbor = Vector.dist(sample, neighborPos);
+    if (distFromNeighbor < currentR) {
+      neighborDistOk = false;
+      break;
+    }
+  }
+  if (!neighborDistOk) {
+    break;
+  }
+}
+```
+
+The sample is compared to all particles in the surrounding 3x3 grid. If any are closer than `currentR` (the minimum allowed distance), the sample is rejected and another is tried.
+
+Here's the result:
+
+<img
+  width="340"
+  height="352"
+  alt="Image"
+  src="https://github.com/user-attachments/assets/0fce820a-a80d-4c57-89f2-73740bbf1f80"
+/>
+
+## Generating Edge Particles
+
+I wanted to go further and create a denser, more 3D effect at the edge of the particle cluster. So I wrote a function to generate points along the edge at regular angles (`stepAngle`).
+
+This function is relatively simple:
+
+```jsx
+export function generateEdgeParticles(
+  options: GenerateEdgeParticlesOptions,
+): Vector[] {
+  const { centerX, centerY, threshold, stepAngle, randomOffset } = options;
+
+  const centerVector = new Vector(centerX, centerY);
+  const edgeParticles: Vector[] = [];
+
+  for (let i = 0; i < 360; i += stepAngle) {
+    const radians = (i * Math.PI) / 180;
+    const vector = new Vector(Math.cos(radians), Math.sin(radians));
+    vector.setMagnitude(threshold);
+    vector.addVector(centerVector);
+
+    // add random offset
+    const randomOffsetX = Math.random() * randomOffset;
+    const randomOffsetY = Math.random() * randomOffset;
+
+    vector.x += randomOffsetX;
+    vector.y += randomOffsetY;
+
+    edgeParticles.push(vector);
+  }
+
+  return edgeParticles;
+}
+```
+
+It places particles every `stepAngle` degrees around the circle, with optional random offset.
+
+<img
+  width="327"
+  height="292"
+  alt="Image"
+  src="https://github.com/user-attachments/assets/787142cd-592b-4502-9014-7fb7e34444b8"
+/>
+
+You can see the 3D sphere effect is well represented.
+
+With this, I completed the core entropy particle feature of the app. From the physics system to the particle placement algorithm, there was a lot to learn, but it was a fascinating process. Thank you.
